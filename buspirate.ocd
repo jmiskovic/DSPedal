@@ -1,0 +1,11 @@
+source /usr/local/share/openocd/scripts/interface/buspirate.cfg
+source /usr/local/share/openocd/scripts/target/lpc4357.cfg
+
+reset_config srst_only; 
+adapter_khz 1000; 
+init; 
+reset; 
+sleep 500; 
+halt; 
+flash protect 0 0 last off;
+
