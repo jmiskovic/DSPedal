@@ -1,0 +1,9 @@
+# Output files and precompiled libs
+out/**/*
+libs/**/*
+
+# Project
+*.sublime*
+
+# Random tools
+iram_dfu_util_any.bin.hdr
