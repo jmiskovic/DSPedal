@@ -1,1 +1,1 @@
-sudo openocd -f buspirate.ocd -s /ust/local/share/openocd/
+openocd -f buspirate.ocd -s /ust/local/share/openocd/

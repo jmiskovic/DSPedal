@@ -256,6 +256,25 @@ void Board_USB1_Init(void) {
 	}
 }
 
+void Board_Delay(uint32_t n) {
+	while(n--) {}
+}
+
+void Board_Blink_Forever(uint8_t count) {
+	uint8_t i;
+	const uint32_t BLINK_DELAY = 1000u * 5000u;
+	Board_LED_Set(1); // if count==0, keep led always on
+	for (;;) {
+		for (i = count; i > 0; i--) {
+			Board_LED_Set(1);
+			Board_Delay(BLINK_DELAY);
+			Board_LED_Set(0);
+			Board_Delay(BLINK_DELAY);
+		}
+		Board_Delay(BLINK_DELAY * 5);
+	}
+}
+
 /* Returns the MAC address assigned to this board */
 void Board_ENET_GetMacADDR(uint8_t *mcaddr)
 {

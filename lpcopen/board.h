@@ -203,6 +203,10 @@ void Board_USB1_Init(void);
  */
 void Board_Audio_Init(LPC_I2S_T *pI2S, int micIn);
 
+
+void Board_Delay(uint32_t n);
+void Board_Blink_Forever(uint8_t count);
+
 /**
  * @}
  */
