@@ -86,19 +86,43 @@ extern "C" {
 #define I2CDEV_UDA1380_ADDR     (0x34 >> 1)
 #define UDA1380_I2C_BUS          I2C0
 
-#define BUTTONS_BUTTON1     0x01
-#define BUTTONS_UP          0x01
-#define BUTTONS_DOWN        0x02
-#define BUTTONS_LEFT        0x04
-#define BUTTONS_RIGHT       0x08
-#define BUTTONS_PRESS       0x10
-#define NO_BUTTON_PRESSED   0x00
+enum BUTTON_VALUES {
+    BUTTONS_DOWN      = 0x01,
+    BUTTONS_UP        = 0x02,
+    BUTTONS_RIGHT     = 0x04,
+    BUTTONS_LEFT      = 0x08,
+    BUTTONS_PRESS     = 0x10,
+    NO_BUTTON_PRESSED = 0x00
+};
 
-/*Define if use SDCARD for Mass Storage Example*/
-// #define CFG_SDCARD
+enum JOYSTICK_VALUES {
+    NO_JOYSTICK_PRESSED = 0x00,
+    JOYSTICK_UP         = 0x01,
+    JOYSTICK_DOWN       = 0x02,
+    JOYSTICK_LEFT       = 0x04,
+    JOYSTICK_RIGHT      = 0x08,
+    JOYSTICK_PRESS      = 0x10
+};
 
-#define BUTTONS_BUTTON1_GPIO_PORT_NUM   0
-#define BUTTONS_BUTTON1_GPIO_BIT_NUM    7
+#define BUTTONS_GPIO_PORT_NUM   7
+
+enum BUTTON_GPIO_BIT_NUMS {
+    BUTTONS_PRESS_GPIO_PORT_NUM     = 0,
+    BUTTONS_UP_GPIO_PORT_NUM        = 1,
+    BUTTONS_RIGHT_GPIO_PORT_NUM     = 2,
+    BUTTONS_DOWN_GPIO_PORT_NUM      = 3,
+    BUTTONS_LEFT_GPIO_PORT_NUM      = 4
+};
+
+#define JOYSTICK_GPIO_PORT_NUM 6
+
+enum JOYSTICK_GPIO_BIT_NUMS {
+    JOYSTICK_UP_GPIO_BIT_NUM    = 16,
+    JOYSTICK_RIGHT_GPIO_BIT_NUM = 17,
+    JOYSTICK_PRESS_GPIO_BIT_NUM = 18,
+    JOYSTICK_DOWN_GPIO_BIT_NUM  = 19,
+    JOYSTICK_LEFT_GPIO_BIT_NUM  = 20
+};
 
 /**
  * @brief	Sets up board specific I2C interface

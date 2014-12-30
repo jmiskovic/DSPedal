@@ -40,7 +40,8 @@ INCLUDES+= -I lpcopen
 INCLUDES+= -I lpcopen/lpc_chip_43xx/inc
 INCLUDES+= -I lpcopen/lpc_chip_43xx/inc/usbd
 
-#Q := @
+# comment following line for verbose building
+Q := @
 
 ## Linker flags
 LDFLAGS = $(CFLAGS) -T $(LINKERSCRIPT) -Wl,--gc-sections -Wl,-Map=$(BUILD_DIR)/$(PROJECT).map
