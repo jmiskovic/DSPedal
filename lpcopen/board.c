@@ -31,6 +31,7 @@
 
 #include "usbd_cfg.h"
 #include "cdc_vcom.h"
+#include "mem_tests.h"
 
 /* System configuration variables used by chip driver */
 const uint32_t ExtRateIn = 0;
@@ -283,6 +284,31 @@ void Board_ENET_GetMacADDR(uint8_t *mcaddr)
 	memcpy(mcaddr, boardmac, 6);
 }
 
+int check_mem(void) {
+	MEM_TEST_SETUP_T mem_setup = { (uint32_t *) 0x28000000, 12800 };
+	bool valid = 1;
+	DEBUGSTR("\nmem_test_walking0...     ");
+	valid = mem_test_walking0(&mem_setup);
+	if (valid) DEBUGSTR("OK"); else DEBUGOUT("FAULT @%p %04lx!=%04lx", mem_setup.fail_addr, mem_setup.is_val, mem_setup.ex_val);
+	DEBUGSTR("\nmem_test_walking1...     ");
+	valid = mem_test_walking1(&mem_setup);
+	if (valid) DEBUGSTR("OK"); else DEBUGOUT("FAULT @%p %04lx!=%04lx", mem_setup.fail_addr, mem_setup.is_val, mem_setup.ex_val);
+	DEBUGSTR("\nmem_test_address...      ");
+	valid = mem_test_address(&mem_setup);
+	if (valid) DEBUGSTR("OK"); else DEBUGOUT("FAULT @%p %04lx!=%04lx", mem_setup.fail_addr, mem_setup.is_val, mem_setup.ex_val);
+	DEBUGSTR("\nmem_test_invaddress...   ");
+	valid = mem_test_invaddress(&mem_setup);
+	if (valid) DEBUGSTR("OK"); else DEBUGOUT("FAULT @%p %04lx!=%04lx", mem_setup.fail_addr, mem_setup.is_val, mem_setup.ex_val);
+	DEBUGSTR("\nmem_test_pattern...      ");
+	valid = mem_test_pattern(&mem_setup);
+	if (valid) DEBUGSTR("OK"); else DEBUGOUT("FAULT @%p %04lx!=%04lx", mem_setup.fail_addr, mem_setup.is_val, mem_setup.ex_val);
+	DEBUGSTR("\nmem_test_pattern_seed... ");
+	valid = mem_test_pattern_seed(&mem_setup, 0x5ad1babe, 7);
+	if (valid) DEBUGSTR("OK"); else DEBUGOUT("FAULT @%p %04lx!=%04lx", mem_setup.fail_addr, mem_setup.is_val, mem_setup.ex_val);
+	DEBUGSTR("\n");
+	return valid;
+}
+
 /* Set up and initialize all required blocks and functions related to the
    board hardware */
 void Board_Init(void)
@@ -295,6 +321,8 @@ void Board_Init(void)
 	/* Initialize LEDs */
 	Chip_GPIO_SetPinDIROutput(LPC_GPIO_PORT, 7, 7);
 	Chip_GPIO_SetPinState(LPC_GPIO_PORT, 7, 7, 1);
+
+    check_mem();
 }
 
 void Board_I2C_Init(I2C_ID_T id)

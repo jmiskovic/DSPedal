@@ -9,7 +9,7 @@ MEMORY
   RamAHB32 (rwx)    : ORIGIN = 0x20000000, LENGTH = 0x8000 /* 32K bytes */
   RamAHB16 (rwx)    : ORIGIN = 0x20008000, LENGTH = 0x4000 /* 16K bytes */
   RamAHB_ETB16 (rwx): ORIGIN = 0x2000c000, LENGTH = 0x4000 /* 16K bytes */
-  SDRam (rwx)     : ORIGIN = 0x28000000, LENGTH = 0x10000000 /* 4 Meg x 16 x 4 banks */
+  SDRam (rwx)     : ORIGIN = 0x28000000, LENGTH = 0x2000000 /* 4 Meg x 16 x 4 banks */
   Shadow_Mem (rwx)  : ORIGIN = 0x00000000, LENGTH = 0x8000 /* 32K bytes */
 }
   /* Define a symbol for the top of each memory region */
@@ -74,7 +74,7 @@ SECTIONS
         *(.after_vectors*)
 /*        . = . + 2000;  dfu-util reports error if image is too small */
 
-    } >RamLoc40
+    } >RamLoc32
 
     .text : ALIGN(4)
     {
@@ -82,7 +82,7 @@ SECTIONS
         *(.rodata .rodata.* .constdata .constdata.*)
         . = ALIGN(4);
 
-    } > RamLoc40
+    } > RamLoc32
 
     /*
      * for exception handling/unwind - some Newlib functions (in common
@@ -91,28 +91,28 @@ SECTIONS
     .ARM.extab : ALIGN(4)
     {
       *(.ARM.extab* .gnu.linkonce.armextab.*)
-    } > RamLoc40
+    } > RamLoc32
     __exidx_start = .;
 
     .ARM.exidx : ALIGN(4)
     {
       *(.ARM.exidx* .gnu.linkonce.armexidx.*)
-    } > RamLoc40
+    } > RamLoc32
     __exidx_end = .;
 
     _etext = .;
 
 
-    /* DATA section for RamLoc40 */
+    /* DATA section for RamLoc32 */
     .data_RAM2 : ALIGN(4)
     {
        FILL(0xff)
        *(.ramfunc.$RAM2)
-       *(.ramfunc.$RamLoc40)
+       *(.ramfunc.$RamLoc32)
       *(.data.$RAM2*)
-      *(.data.$RamLoc40*)
+      *(.data.$RamLoc32*)
        . = ALIGN(4) ;
-    } > RamLoc40 AT>RamLoc40
+    } > RamLoc32 AT>RamLoc32
 
     /* DATA section for RamAHB32 */
     .data_RAM3 : ALIGN(4)
@@ -123,7 +123,7 @@ SECTIONS
       *(.data.$RAM3*)
       *(.data.$RamAHB32*)
        . = ALIGN(4) ;
-    } > RamAHB32 AT>RamLoc40
+    } > RamAHB32 AT>RamLoc32
 
     /* DATA section for RamAHB16 */
     .data_RAM4 : ALIGN(4)
@@ -134,7 +134,7 @@ SECTIONS
       *(.data.$RAM4*)
       *(.data.$RamAHB16*)
        . = ALIGN(4) ;
-    } > RamAHB16 AT>RamLoc40
+    } > RamAHB16 AT>RamLoc32
 
     /* DATA section for RamAHB_ETB16 */
     .data_RAM5 : ALIGN(4)
@@ -145,7 +145,7 @@ SECTIONS
       *(.data.$RAM5*)
       *(.data.$RamAHB_ETB16*)
        . = ALIGN(4) ;
-    } > RamAHB_ETB16 AT>RamLoc40
+    } > RamAHB_ETB16 AT>RamLoc32
 
     /* MAIN DATA SECTION */
 
@@ -155,10 +155,10 @@ SECTIONS
         KEEP(*(.bss.$RESERVED*))
         . = ALIGN(4) ;
         _end_uninit_RESERVED = .;
-    } > RamLoc40
+    } > RamLoc32
 
 
-  /* Main DATA section (RamLoc40) */
+  /* Main DATA section (RamLoc32) */
   .data : ALIGN(4)
   {
      FILL(0xff)
@@ -168,15 +168,15 @@ SECTIONS
      *(.data*)
      . = ALIGN(4) ;
      _edata = . ;
-  } > RamLoc40 AT>RamLoc40
+  } > RamLoc32 AT>RamLoc32
 
-    /* BSS section for RamLoc40 */
+    /* BSS section for RamLoc32 */
     .bss_RAM2 : ALIGN(4)
     {
       *(.bss.$RAM2*)
-      *(.bss.$RamLoc40*)
+      *(.bss.$RamLoc32*)
        . = ALIGN(4) ;
-    } > RamLoc40
+    } > RamLoc32
     /* BSS section for RamAHB32 */
     .bss_RAM3 : ALIGN(4)
     {
@@ -208,15 +208,15 @@ SECTIONS
         . = ALIGN(4) ;
         _ebss = .;
         PROVIDE(end = .);
-    } > RamLoc40
+    } > RamLoc32
 
-    /* NOINIT section for RamLoc40 */
+    /* NOINIT section for RamLoc32 */
     .noinit_RAM2 (NOLOAD) : ALIGN(4)
     {
       *(.noinit.$RAM2*)
-      *(.noinit.$RamLoc40*)
+      *(.noinit.$RamLoc32*)
        . = ALIGN(4) ;
-    } > RamLoc40
+    } > RamLoc32
     /* NOINIT section for RamAHB32 */
     .noinit_RAM3 (NOLOAD) : ALIGN(4)
     {
@@ -246,8 +246,8 @@ SECTIONS
         *(.noinit*)
          . = ALIGN(4) ;
         _end_noinit = .;
-    } > RamLoc40
+    } > RamLoc32
 
     PROVIDE(_pvHeapStart = DEFINED(__user_heap_base) ? __user_heap_base : .);
-    PROVIDE(_vStackTop = DEFINED(__user_stack_top) ? __user_stack_top : __top_RamLoc40 - 0);
+    PROVIDE(_vStackTop = DEFINED(__user_stack_top) ? __user_stack_top : __top_RamLoc32 - 0);
 }

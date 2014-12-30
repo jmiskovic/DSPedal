@@ -27,7 +27,7 @@ CFLAGS+= -O0 -g3 -ffunction-sections -fmessage-length=0  -fno-stack-protector -f
 #CFLAGS+= -flto -fno-builtin -nostdlib
 CFLAGS+= -MD -std=c99 -Wall #-pedantic
 CFLAGS+= -DCORE_M4 -D__MULTICORE_NONE -D__GNU_ARM
-CFLAGS+= -DDEBUG -D__USE_LPCOPEN -DDONT_RESET_ON_RESTART -DDEBUG_ENABLE
+CFLAGS+= -DDEBUG -D__USE_LPCOPEN -DDEBUG_ENABLE #-DDONT_RESET_ON_RESTART
 CFLAGS+= -lrdimon -lc --specs=nano.specs --specs=rdimon.specs
 
 ## Assembler flags
@@ -62,6 +62,7 @@ OBJECTS = 	$(BUILD_DIR)/startup.o \
 			$(BUILD_DIR)/fpu_init.o \
 			$(BUILD_DIR)/gpdma_18xx_43xx.o \
 			$(BUILD_DIR)/main.o \
+			$(BUILD_DIR)/mem_tests.o \
 #			$(BUILD_DIR)/sound.o \
 #			$(BUILD_DIR)/faust.o \
 #			$(BUILD_DIR)/uart_18xx_43xx.o \
