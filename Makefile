@@ -19,15 +19,13 @@ LINKERSCRIPT = RAMboot.ld
 
 CORELIB = ../Core
 
-# TODO: -specs=nano.specs
-
 ## Compiler flags
 CFLAGS = -mthumb -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=softfp
 CFLAGS+= -O0 -g3 -ffunction-sections -fmessage-length=0  -fno-stack-protector -fdata-sections -fsingle-precision-constant -fno-common
 #CFLAGS+= -flto -fno-builtin -nostdlib
 CFLAGS+= -MD -std=c99 -Wall #-pedantic
 CFLAGS+= -DCORE_M4 -D__MULTICORE_NONE -D__GNU_ARM
-CFLAGS+= -DDEBUG -D__USE_LPCOPEN -DDEBUG_ENABLE #-DDONT_RESET_ON_RESTART
+CFLAGS+= -DDEBUG -D__USE_LPCOPEN -DDEBUG_ENABLE
 CFLAGS+= -lrdimon -lc --specs=nano.specs --specs=rdimon.specs
 
 ## Assembler flags
@@ -80,10 +78,6 @@ $(BUILD_DIR)/%.o: src/%.c
 	@-echo CC src: $@
 	$(Q) $(CC) -c $(CFLAGS) $(INCLUDES) -o $@ $<
 
-#$(BUILD_DIR)/%.o: exam/%.c
-#	@-echo CC src: $@
-#	$(Q) $(CC) -c $(CFLAGS) $(INCLUDES) -o $@ $<
-
 $(BUILD_DIR)/%.o: lpcopen/%.c
 	@-echo CC lpcopen: $@
 	$(Q) $(CC) -c $(CFLAGS) $(INCLUDES) -o $@ $<
@@ -91,10 +85,6 @@ $(BUILD_DIR)/%.o: lpcopen/%.c
 $(BUILD_DIR)/%.o: lpcopen/lpc_chip_43xx/src/%.c
 	@-echo CC lpcopen chip: $@
 	$(Q) $(CC) -c $(CFLAGS) $(INCLUDES) -o $@ $<
-
-# $(BUILD_DIR)/%.o: $(DRIVERLIB)/source/%.c
-# 	@-echo CC driverlib: $@
-# 	$(Q) $(CC) -c $(CFLAGS) $(INCLUDES) -o $@ $<
 
 $(BUILD_DIR)/$(PROJECT).axf: $(OBJECTS)
 	@-echo 'LD OBJECTS, LIBS -> $@'

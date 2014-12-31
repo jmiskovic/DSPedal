@@ -15,9 +15,9 @@ void SystemInit(void)
     unsigned int *pSCB_VTOR = (unsigned int *) 0xE000ED08;
 
     extern void (* const g_pfnVectors[])(void);
-    LPC_CREG->MXMEMMAP = (unsigned int) &g_pfnVectors;
+/*    LPC_CREG->MXMEMMAP = (unsigned int) &g_pfnVectors; */
 /*    *pSCB_VTOR = (unsigned int) &g_pfnVectors; */
-    *pSCB_VTOR = 0x00000000;
+    *pSCB_VTOR = (unsigned int) &g_pfnVectors;
 
 
 #if defined(__FPU_PRESENT) && __FPU_PRESENT == 1
