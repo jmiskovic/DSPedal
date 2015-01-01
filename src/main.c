@@ -12,7 +12,8 @@ int main() {
     SysTick_Config(SystemCoreClock / 10000);
     Board_Init();
     DEBUGSTR("boot process completed\n");
-    //sound_init();
+    sound_init();
+    sound_blocking_process();
     for(;;) {
         //Board_LED_Set(0); Board_Delay(BLINK_DELAY * 1000); Board_LED_Set(1); DEBUGSTR("led on\n"); Board_Delay(BLINK_DELAY * 1000);
     }

@@ -9,7 +9,7 @@ MEMORY
   RamAHB32 (rwx)    : ORIGIN = 0x20000000, LENGTH = 0x8000 /* 32K bytes */
   RamAHB16 (rwx)    : ORIGIN = 0x20008000, LENGTH = 0x4000 /* 16K bytes */
   RamAHB_ETB16 (rwx): ORIGIN = 0x2000c000, LENGTH = 0x4000 /* 16K bytes */
-  SDRam (rwx)     : ORIGIN = 0x28000000, LENGTH = 0x2000000 /* 4 Meg x 16 x 4 banks */
+  SDRAM (rwx)       : ORIGIN = 0x28000000, LENGTH = 0x2000000 /* 4 Meg x 16 x 4 banks */
   Shadow_Mem (rwx)  : ORIGIN = 0x00000000, LENGTH = 0x8000 /* 32K bytes */
 }
   /* Define a symbol for the top of each memory region */
@@ -21,7 +21,7 @@ MEMORY
   __top_RamAHB32 = 0x20000000 + 0x8000;
   __top_RamAHB16 = 0x20008000 + 0x4000;
   __top_RamAHB_ETB16 = 0x2000c000 + 0x4000;
-  __top_SDRam = 0x28000000 + 0x10000000;
+  __top_SDRAM = 0x28000000 + 0x10000000;
   __top_Shadow_Mem = 0x00000000 + 0x8000;
 
 ENTRY(ResetISR)
@@ -147,6 +147,13 @@ SECTIONS
        . = ALIGN(4) ;
     } > RamAHB_ETB16 AT>RamLoc32
 
+    /* DATA section for external SDRAM */
+    .data_SDRAM (NOLOAD): ALIGN(4)
+    {
+        *(SDRAM*)
+        . = ALIGN(4) ;
+    } > SDRAM
+
     /* MAIN DATA SECTION */
 
 
@@ -217,6 +224,7 @@ SECTIONS
       *(.noinit.$RamLoc32*)
        . = ALIGN(4) ;
     } > RamLoc32
+
     /* NOINIT section for RamAHB32 */
     .noinit_RAM3 (NOLOAD) : ALIGN(4)
     {
@@ -224,6 +232,7 @@ SECTIONS
       *(.noinit.$RamAHB32*)
        . = ALIGN(4) ;
     } > RamAHB32
+
     /* NOINIT section for RamAHB16 */
     .noinit_RAM4 (NOLOAD) : ALIGN(4)
     {
@@ -231,6 +240,7 @@ SECTIONS
       *(.noinit.$RamAHB16*)
        . = ALIGN(4) ;
     } > RamAHB16
+
     /* NOINIT section for RamAHB_ETB16 */
     .noinit_RAM5 (NOLOAD) : ALIGN(4)
     {

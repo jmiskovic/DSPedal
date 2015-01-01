@@ -20,12 +20,13 @@ LINKERSCRIPT = RAMboot.ld
 CORELIB = ../Core
 
 ## Compiler flags
-CFLAGS = -mthumb -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=softfp
-CFLAGS+= -O0 -g3 -ffunction-sections -fmessage-length=0  -fno-stack-protector -fdata-sections -fsingle-precision-constant -fno-common
+CFLAGS = -O0 -mthumb -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=softfp
+CFLAGS+= -ffunction-sections -fmessage-length=0  -fno-stack-protector -fdata-sections -fsingle-precision-constant -fno-common
 #CFLAGS+= -flto -fno-builtin -nostdlib
+#CFLAGS+= -O3 -funroll-loops --param max-unroll-times=200
 CFLAGS+= -MD -std=c99 -Wall #-pedantic
-CFLAGS+= -DCORE_M4 -D__MULTICORE_NONE -D__GNU_ARM
-CFLAGS+= -DDEBUG -D__USE_LPCOPEN -DDEBUG_ENABLE
+CFLAGS+= -DCORE_M4 -D__MULTICORE_NONE -D__GNU_ARM -D__USE_LPCOPEN
+CFLAGS+= -g3 -DDEBUG_ENABLE -DDEBUG
 CFLAGS+= -lrdimon -lc --specs=nano.specs --specs=rdimon.specs
 
 ## Assembler flags
@@ -62,8 +63,8 @@ OBJECTS = 	$(BUILD_DIR)/startup.o \
 			$(BUILD_DIR)/gpdma_18xx_43xx.o \
 			$(BUILD_DIR)/main.o \
 			$(BUILD_DIR)/mem_tests.o \
-#			$(BUILD_DIR)/sound.o \
-#			$(BUILD_DIR)/faust.o \
+			$(BUILD_DIR)/sound.o \
+			$(BUILD_DIR)/faust.o \
 #			$(BUILD_DIR)/uart_18xx_43xx.o \
 #			$(BUILD_DIR)/i2s.o \
 
