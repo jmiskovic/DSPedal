@@ -7,6 +7,7 @@ CC = arm-none-eabi-gcc
 LD = arm-none-eabi-gcc
 OC = arm-none-eabi-objcopy
 SIZE = arm-none-eabi-size
+FAUST = ../../faustcore/compiler/faust
 
 LINKERSCRIPT = RAMboot.ld
 #LINKERSCRIPT = FLASHboot.ld
@@ -35,6 +36,7 @@ ASFLAGS = -c -x assembler-with-cpp -D__START=main
 INCLUDES = -I $(CORELIB)/Device/NXP/LPC43xx/Include
 INCLUDES+= -I $(CORELIB)/CMSIS/Include
 INCLUDES+= -I src
+INCLUDES+= -I faust_dsp
 INCLUDES+= -I lpcopen
 INCLUDES+= -I lpcopen/lpc_chip_43xx/inc
 INCLUDES+= -I lpcopen/lpc_chip_43xx/inc/usbd
@@ -64,16 +66,24 @@ OBJECTS = 	$(BUILD_DIR)/startup.o \
 			$(BUILD_DIR)/main.o \
 			$(BUILD_DIR)/mem_tests.o \
 			$(BUILD_DIR)/sound.o \
-			$(BUILD_DIR)/faust.o \
+			$(BUILD_DIR)/mydsp_wrap.o \
 #			$(BUILD_DIR)/uart_18xx_43xx.o \
 #			$(BUILD_DIR)/i2s.o \
 
 
 all: $(BUILD_DIR)/$(PROJECT).axf
 
+faust_dsp/mydsp.c: faust_dsp/audio_effect.dsp
+	@-echo FAUST src: $<
+	$(Q) $(FAUST) -lang c -o $@ $<
+
 $(BUILD_DIR)/%.o: src/%.s
 	@-echo AS src: $@
 	$(Q) $(CC) -c $(ASFLAGS) -o $@ $<
+
+$(BUILD_DIR)/mydsp_wrap.o: faust_dsp/mydsp.c faust_dsp/mydsp_wrap.c
+	@-echo CC faust-generated: $@
+	$(Q) $(CC) -c $(CFLAGS) $(INCLUDES) -o $@ faust_dsp/mydsp_wrap.c
 
 $(BUILD_DIR)/%.o: src/%.c
 	@-echo CC src: $@
@@ -113,3 +123,4 @@ gdb: $(BUILD_DIR)/$(PROJECT).axf
 clean:
 	@-echo cleaning
 	$(Q) rm -f ./$(BUILD_DIR)/*
+	$(Q) rm -f ./faust_dsp/mydsp.c
