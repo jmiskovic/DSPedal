@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <cmsis.h>
 
 #define WEAK __attribute__ ((weak))
 #define ALIAS(f) __attribute__ ((weak, alias (#f)))
@@ -354,6 +355,7 @@ of this function. */
     volatile __attribute__((unused)) uint32_t lr; /* Link register. */
     volatile __attribute__((unused)) uint32_t pc; /* Program counter. */
     volatile __attribute__((unused)) uint32_t psr;/* Program status register. */
+    volatile __attribute__((unused)) uint32_t fpscr; /* Floating point status and control register */
 
     r0 = pulFaultStackAddress[ 0 ];
     r1 = pulFaultStackAddress[ 1 ];
@@ -364,6 +366,8 @@ of this function. */
     lr = pulFaultStackAddress[ 5 ];
     pc = pulFaultStackAddress[ 6 ];
     psr = pulFaultStackAddress[ 7 ];
+
+    fpscr = __get_FPSCR();
 
     /* When the following line is hit, the variables contain the register values. */
     for(;;);
@@ -380,7 +384,7 @@ void NMI_Handler(void) {
 }
 __attribute__ ((section(".after_vectors")))
 void HardFault_Handler(void) {
-    /*__asm volatile
+    __asm volatile
     (
         " tst lr, #4                                                \n"
         " ite eq                                                    \n"
@@ -390,7 +394,7 @@ void HardFault_Handler(void) {
         " ldr r2, handler2_address_const                            \n"
         " bx r2                                                     \n"
         " handler2_address_const: .word prvGetRegistersFromStack    \n"
-    );*/
+    );
     while (1) {
     }
 }
