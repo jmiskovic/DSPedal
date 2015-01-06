@@ -66,7 +66,7 @@ void Board_SystemInit(void);
 void Board_SetupMuxing(void);
 
 /**
- * @brief	Setup system clocking 
+ * @brief	Setup system clocking
  * @return	None
  * @note	This sets up board clocking.
  */

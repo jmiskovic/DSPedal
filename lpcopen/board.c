@@ -364,7 +364,7 @@ void Board_Init(void)
 	Chip_GPIO_SetPinDIROutput(LPC_GPIO_PORT, 7, 7);
 	Chip_GPIO_SetPinState(LPC_GPIO_PORT, 7, 7, 1);
 
-    check_mem();
+	//check_mem();
 }
 
 void Board_I2C_Init(I2C_ID_T id)

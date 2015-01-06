@@ -70,11 +70,9 @@ SECTIONS
         __section_table_end = . ;
         /* End of Global Section Table */
 
-
         *(.after_vectors*)
-/*        . = . + 2000;  dfu-util reports error if image is too small */
 
-    } >RamLoc32
+    } >RamLoc40
 
     .text : ALIGN(4)
     {
@@ -82,7 +80,7 @@ SECTIONS
         *(.rodata .rodata.* .constdata .constdata.*)
         . = ALIGN(4);
 
-    } > RamLoc32
+    } >RamLoc40
 
     /*
      * for exception handling/unwind - some Newlib functions (in common
@@ -91,32 +89,28 @@ SECTIONS
     .ARM.extab : ALIGN(4)
     {
       *(.ARM.extab* .gnu.linkonce.armextab.*)
-    } > RamLoc32
+    } >RamLoc40
     __exidx_start = .;
 
     .ARM.exidx : ALIGN(4)
     {
       *(.ARM.exidx* .gnu.linkonce.armexidx.*)
-    } > RamLoc32
+    } >RamLoc40
     __exidx_end = .;
 
     _etext = .;
+
 
     /* DATA section for RamLoc40 */
     .data_RAM2 : ALIGN(4)
     {
        FILL(0xff)
-       __core_m0app_START__ = .; /* start of slave image */
-         KEEP(*(.core_m0app))
-       __core_m0app_END__ = .; /* end of slave image */
-       ASSERT(!(__core_m0app_START__ == __core_m0app_END__), "No slave code for _core_m0app");
-       ASSERT( (ABSOLUTE(__core_m0app_START__) == __vectors_start___core_m0app), "M0APP execute address differs from address provided in source image");
        *(.ramfunc.$RAM2)
        *(.ramfunc.$RamLoc40)
       *(.data.$RAM2*)
       *(.data.$RamLoc40*)
        . = ALIGN(4) ;
-    } > RamLoc40
+    } > RamLoc40 AT>RamLoc40
 
     /* DATA section for RamAHB32 */
     .data_RAM3 : ALIGN(4)
@@ -127,7 +121,7 @@ SECTIONS
       *(.data.$RAM3*)
       *(.data.$RamAHB32*)
        . = ALIGN(4) ;
-    } > RamAHB32 AT>RamLoc32
+    } > RamAHB32 AT>RamLoc40
 
     /* DATA section for RamAHB16 */
     .data_RAM4 : ALIGN(4)
@@ -138,7 +132,7 @@ SECTIONS
       *(.data.$RAM4*)
       *(.data.$RamAHB16*)
        . = ALIGN(4) ;
-    } > RamAHB16 AT>RamLoc32
+    } > RamAHB16 AT>RamLoc40
 
     /* DATA section for RamAHB_ETB16 */
     .data_RAM5 : ALIGN(4)
@@ -149,14 +143,7 @@ SECTIONS
       *(.data.$RAM5*)
       *(.data.$RamAHB_ETB16*)
        . = ALIGN(4) ;
-    } > RamAHB_ETB16 AT>RamLoc32
-
-    /* DATA section for external SDRAM */
-    .data_SDRAM (NOLOAD): ALIGN(4)
-    {
-        *(SDRAM*)
-        . = ALIGN(4) ;
-    } > SDRAM
+    } > RamAHB_ETB16 AT>RamLoc40
 
     /* MAIN DATA SECTION */
 
@@ -179,15 +166,15 @@ SECTIONS
      *(.data*)
      . = ALIGN(4) ;
      _edata = . ;
-  } > RamLoc32 AT>RamLoc32
+  } > RamLoc32 AT>RamLoc40
 
-    /* BSS section for RamLoc32 */
+    /* BSS section for RamLoc40 */
     .bss_RAM2 : ALIGN(4)
     {
       *(.bss.$RAM2*)
-      *(.bss.$RamLoc32*)
+      *(.bss.$RamLoc40*)
        . = ALIGN(4) ;
-    } > RamLoc32
+    } > RamLoc40
     /* BSS section for RamAHB32 */
     .bss_RAM3 : ALIGN(4)
     {
@@ -221,14 +208,13 @@ SECTIONS
         PROVIDE(end = .);
     } > RamLoc32
 
-    /* NOINIT section for RamLoc32 */
+    /* NOINIT section for RamLoc40 */
     .noinit_RAM2 (NOLOAD) : ALIGN(4)
     {
       *(.noinit.$RAM2*)
-      *(.noinit.$RamLoc32*)
+      *(.noinit.$RamLoc40*)
        . = ALIGN(4) ;
-    } > RamLoc32
-
+    } > RamLoc40
     /* NOINIT section for RamAHB32 */
     .noinit_RAM3 (NOLOAD) : ALIGN(4)
     {
@@ -236,7 +222,6 @@ SECTIONS
       *(.noinit.$RamAHB32*)
        . = ALIGN(4) ;
     } > RamAHB32
-
     /* NOINIT section for RamAHB16 */
     .noinit_RAM4 (NOLOAD) : ALIGN(4)
     {
@@ -244,7 +229,6 @@ SECTIONS
       *(.noinit.$RamAHB16*)
        . = ALIGN(4) ;
     } > RamAHB16
-
     /* NOINIT section for RamAHB_ETB16 */
     .noinit_RAM5 (NOLOAD) : ALIGN(4)
     {
