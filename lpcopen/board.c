@@ -32,10 +32,13 @@
 #include "usbd_cfg.h"
 #include "cdc_vcom.h"
 #include "mem_tests.h"
+#include "adxl345.h"
 
 /* System configuration variables used by chip driver */
 const uint32_t ExtRateIn = 0;
 const uint32_t OscRateIn = 12000000;
+
+char * sharedmem = (char *) 0x10089f00;
 
 void Board_UART_Init(LPC_USART_T *pUART)
 {
@@ -114,6 +117,17 @@ bool Board_LED_Test(void)
 void Board_LED_Toggle()
 {
 	Board_LED_Set(!Board_LED_Test());
+}
+
+void Board_Accellerometer_Init(void)
+{
+	Board_I2C_Init(ADXL345_I2C_BUS);
+	Chip_I2C_Init(ADXL345_I2C_BUS);
+	Chip_I2C_SetClockRate(ADXL345_I2C_BUS, 100000);
+	Chip_I2C_SetMasterEventHandler(ADXL345_I2C_BUS, Chip_I2C_EventHandlerPolling);
+
+	ADXL345_Init(MR_2_g);
+    ADXL345_power_on();
 }
 
 void Board_Buttons_Init(void)
@@ -371,8 +385,8 @@ void Board_I2C_Init(I2C_ID_T id)
 {
 	if (id == I2C1) {
 		/* Configure pin function for I2C1*/
-		Chip_SCU_PinMuxSet(0x2, 3, (SCU_MODE_ZIF_DIS | SCU_MODE_INBUFF_EN | SCU_MODE_FUNC1));		/* P2.3 : I2C1_SDA */
-		Chip_SCU_PinMuxSet(0x2, 4, (SCU_MODE_ZIF_DIS | SCU_MODE_INBUFF_EN | SCU_MODE_FUNC1));		/* P2.4 : I2C1_SCL */
+		Chip_SCU_PinMuxSet(0xE,13, (SCU_MODE_ZIF_DIS | SCU_MODE_INBUFF_EN | SCU_MODE_FUNC2));		/* PE.13 : I2C1_SDA */
+		Chip_SCU_PinMuxSet(0xE,15, (SCU_MODE_ZIF_DIS | SCU_MODE_INBUFF_EN | SCU_MODE_FUNC2));		/* PE.15 : I2C1_SCL */
 	}
 	else {
 		Chip_SCU_I2C0PinConfig(I2C0_STANDARD_FAST_MODE);
