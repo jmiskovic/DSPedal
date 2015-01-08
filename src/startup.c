@@ -299,10 +299,6 @@ void ResetISR(void) {
 #endif  // ifndef DONT_RESET_ON_RESTART
 // *************************************************************
 
-#if defined (__USE_LPCOPEN)
-    SystemInit();
-#endif
-
     //
     // Copy the data sections from flash to SRAM.
     //
@@ -326,7 +322,10 @@ void ResetISR(void) {
         SectionLen = *SectionTableAddr++;
         bss_init(ExeAddr, SectionLen);
     }
-
+    __DSB(); // this starts up M0 core, we want data sections to be initialized properly
+#if defined (__USE_LPCOPEN)
+    SystemInit();
+#endif
 #if defined (__USE_CMSIS)
     SystemInit();
 #endif

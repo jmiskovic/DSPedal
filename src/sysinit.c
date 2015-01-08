@@ -8,21 +8,15 @@ const uint32_t OscRateIn = 12000000;
 
 static int M0Image_Boot(uint32_t m0_image_addr)
 {
-    /* Make sure the alignment is OK */
-    if (m0_image_addr & 0xFFF) {
+    if (m0_image_addr & 0xFFF) { /* Make sure the alignment is OK */
         return -1;
     }
 
     /* Make sure the M0 core is being held in reset via the RGU */
     Chip_RGU_TriggerReset(RGU_M0APP_RST);
-
     Chip_Clock_Enable(CLK_M4_M0APP);
-
-    /* Keep in mind the M0 image must be aligned on a 4K boundary */
     Chip_CREG_SetM0AppMemMap(m0_image_addr);
-
     Chip_RGU_ClearReset(RGU_M0APP_RST);
-
     return 0;
 }
 
@@ -52,7 +46,8 @@ void SystemInit(void)
 #endif
 
 #if defined(BOOT_CORE_M0)
-    M0Image_Boot(0x10080000);
+    extern void * __core_m0app_START__;
+    M0Image_Boot((uint32_t) &__core_m0app_START__);
 #endif
 
 #endif /* defined(CORE_M3) || defined(CORE_M4) */

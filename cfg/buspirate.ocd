@@ -8,4 +8,5 @@ reset;
 sleep 500;
 halt;
 flash protect 0 0 last off;
+#flash protect 1 0 last off;
 

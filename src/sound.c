@@ -7,6 +7,8 @@
 #define SAMPLE_RATE 48000
 #define BUFFER_SIZE 1
 
+extern void main_periodic_task(void);
+
 void sound_blocking_process(void)
 {
     uint32_t polling_data = 0;
@@ -36,6 +38,9 @@ void sound_blocking_process(void)
             polling_data = (((uint16_t) left) << 16) | (((uint16_t) right) & 0xffff);
             Chip_I2S_Send(LPC_I2S0, polling_data);
         }
+#ifdef DEBUG_ENABLE
+        main_periodic_task();
+#endif
     }
 }
 

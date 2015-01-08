@@ -326,25 +326,25 @@ void Board_ENET_GetMacADDR(uint8_t *mcaddr)
 int check_mem(void) {
 	MEM_TEST_SETUP_T mem_setup = { (uint32_t *) 0x28000000, 12800 };
 	bool valid = 1;
-	DEBUGSTR("\nmem_test_walking0...     ");
-	valid = mem_test_walking0(&mem_setup);
-	if (valid) DEBUGSTR("OK"); else DEBUGOUT("FAULT @%p %04lx!=%04lx", mem_setup.fail_addr, mem_setup.is_val, mem_setup.ex_val);
-	DEBUGSTR("\nmem_test_walking1...     ");
-	valid = mem_test_walking1(&mem_setup);
-	if (valid) DEBUGSTR("OK"); else DEBUGOUT("FAULT @%p %04lx!=%04lx", mem_setup.fail_addr, mem_setup.is_val, mem_setup.ex_val);
-	DEBUGSTR("\nmem_test_address...      ");
-	valid = mem_test_address(&mem_setup);
-	if (valid) DEBUGSTR("OK"); else DEBUGOUT("FAULT @%p %04lx!=%04lx", mem_setup.fail_addr, mem_setup.is_val, mem_setup.ex_val);
-	DEBUGSTR("\nmem_test_invaddress...   ");
-	valid = mem_test_invaddress(&mem_setup);
-	if (valid) DEBUGSTR("OK"); else DEBUGOUT("FAULT @%p %04lx!=%04lx", mem_setup.fail_addr, mem_setup.is_val, mem_setup.ex_val);
-	DEBUGSTR("\nmem_test_pattern...      ");
-	valid = mem_test_pattern(&mem_setup);
-	if (valid) DEBUGSTR("OK"); else DEBUGOUT("FAULT @%p %04lx!=%04lx", mem_setup.fail_addr, mem_setup.is_val, mem_setup.ex_val);
-	DEBUGSTR("\nmem_test_pattern_seed... ");
-	valid = mem_test_pattern_seed(&mem_setup, 0x5ad1babe, 7);
-	if (valid) DEBUGSTR("OK"); else DEBUGOUT("FAULT @%p %04lx!=%04lx", mem_setup.fail_addr, mem_setup.is_val, mem_setup.ex_val);
-	DEBUGSTR("\n");
+	//DEBUGSTR("\nmem_test_walking0...     ");
+	valid &= mem_test_walking0(&mem_setup);
+	// if (valid) DEBUGSTR("OK"); else DEBUGOUT("FAULT @%p %04lx!=%04lx", mem_setup.fail_addr, mem_setup.is_val, mem_setup.ex_val);
+	//DEBUGSTR("\nmem_test_walking1...     ");
+	valid &= mem_test_walking1(&mem_setup);
+	// if (valid) DEBUGSTR("OK"); else DEBUGOUT("FAULT @%p %04lx!=%04lx", mem_setup.fail_addr, mem_setup.is_val, mem_setup.ex_val);
+	//DEBUGSTR("\nmem_test_address...      ");
+	valid &= mem_test_address(&mem_setup);
+	// if (valid) DEBUGSTR("OK"); else DEBUGOUT("FAULT @%p %04lx!=%04lx", mem_setup.fail_addr, mem_setup.is_val, mem_setup.ex_val);
+	//DEBUGSTR("\nmem_test_invaddress...   ");
+	valid &= mem_test_invaddress(&mem_setup);
+	// if (valid) DEBUGSTR("OK"); else DEBUGOUT("FAULT @%p %04lx!=%04lx", mem_setup.fail_addr, mem_setup.is_val, mem_setup.ex_val);
+	//DEBUGSTR("\nmem_test_pattern...      ");
+	valid &= mem_test_pattern(&mem_setup);
+	// if (valid) DEBUGSTR("OK"); else DEBUGOUT("FAULT @%p %04lx!=%04lx", mem_setup.fail_addr, mem_setup.is_val, mem_setup.ex_val);
+	//DEBUGSTR("\nmem_test_pattern_seed... ");
+	valid &= mem_test_pattern_seed(&mem_setup, 0x5ad1babe, 7);
+	// if (valid) DEBUGSTR("OK"); else DEBUGOUT("FAULT @%p %04lx!=%04lx", mem_setup.fail_addr, mem_setup.is_val, mem_setup.ex_val);
+	//DEBUGSTR("\n");
 	return valid;
 }
 

@@ -63,8 +63,17 @@ extern "C" {
 /** Define DEBUG_SEMIHOSTING along with DEBUG_ENABLE to enable IO support
     via semihosting. You may need to use a C library that supports
 	semihosting with this option.
- */
+
+    Commented out, please use compiler flag -DDEBUG_SEMIHOSTING
 #define DEBUG_SEMIHOSTING
+ */
+
+/** Define DEBUG_SHAREDMEM along with DEBUG_ENABLE to enable IO support
+    via shared memory interface.
+
+    Commented out, please use compiler flag -DDEBUG_SHAREDMEM
+#define DEBUG_SHAREDMEM
+ */
 
 /** Board UART used for debug output and input using the DEBUG* macros. This
     is also the port used for Board_UARTPutChar, Board_UARTGetChar, and
