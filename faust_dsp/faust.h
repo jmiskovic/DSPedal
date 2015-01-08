@@ -3,6 +3,7 @@
 
 #include "CUI.h"
 
+#define DSP_MEMORY_BLOCK_START 0x28000000 /* placed in SDRAM */
 typedef struct mydsp mydsp;
 
 mydsp* newmydsp();

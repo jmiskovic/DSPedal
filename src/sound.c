@@ -2,8 +2,6 @@
 #include "board.h"
 #include "faust.h"
 
-#define DSP_MEMORY_BLOCK_START 0x28000000 /* placed in SDRAM */
-
 #define SAMPLE_RATE 48000
 #define BUFFER_SIZE 1
 
@@ -20,6 +18,7 @@ void sound_blocking_process(void)
     float * input_pointers[] = {&inputs[0][0], &inputs[1][0]};
     float * output_pointers[] = {&outputs[0][0], &outputs[1][0]};
     instanceInitmydsp(dsp, SAMPLE_RATE);
+
     for (;;) {
         for (i = 0; i < BUFFER_SIZE; i++) {
             while (!(Chip_I2S_GetRxLevel(LPC_I2S0) > 0)) {}
@@ -30,6 +29,7 @@ void sound_blocking_process(void)
             inputs[1][i] = right / 32768.0f;
         }
         computemydsp(dsp, BUFFER_SIZE, input_pointers, output_pointers);
+
         for (i = 0; i < BUFFER_SIZE; i++) {
             while (!(Chip_I2S_GetTxLevel(LPC_I2S0) < 4)) {}
             left = outputs[0][i] * 32768.0f;
@@ -46,7 +46,7 @@ void sound_blocking_process(void)
 
 void sound_blocking_passthrough(void)
 {
-    uint8_t send_flag;
+    uint8_t send_flag = 0;
     uint32_t polling_data = 0;
     for (;;) {
         if (Chip_I2S_GetRxLevel(LPC_I2S0) > 0) {
@@ -67,8 +67,8 @@ void sound_init(void)
     audio_config.SampleRate = SAMPLE_RATE;
     audio_config.ChannelNumber = 2;
     audio_config.WordWidth = 16;
+
     Board_Audio_Init(LPC_I2S0, UDA1380_LINE_IN);
-    Chip_I2S_Init(LPC_I2S0);
     do {
         ret = Chip_I2S_RxConfig(LPC_I2S0, &audio_config);
     } while (ret != SUCCESS);
