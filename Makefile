@@ -16,8 +16,8 @@ SIZE = arm-none-eabi-size
 FAUST = $(FAUSTPATH)/compiler/faust
 
 LINKERSCRIPT = RAMboot.ld
-#LINKERSCRIPT = FLASHboot.ld
 LINKERSCRIPT_M0 = RAMboot_M0.ld
+#LINKERSCRIPT = FLASHboot.ld
 #LINKERSCRIPT_M0 = FLASHboot_M0.ld
 
 CORELIB = ../Core
@@ -29,13 +29,14 @@ CFLAGS = -mthumb -ffunction-sections -fmessage-length=0  -fno-stack-protector -f
 CFLAGS+= -D__USE_LPCOPEN -D__GNU_ARM
 CFLAGS+= -MD -std=c99 -Wall #-pedantic
 CFLAGS+= -O0 -g3 -DDEBUG_ENABLE -DDEBUG
-#CFLAGS+= -O3 -funroll-loops --param max-unroll-times=200
 CFLAGS+= --specs=nano.specs --specs=rdimon.specs
 
 CLIBS = -lc -lm
 
 CFLAGS_M4 = -DCORE_M4 -DBOOT_CORE_M0 -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=softfp -DDEBUG_SEMIHOSTING
 CFLAGS_M0 = -DCORE_M0 -mcpu=cortex-m0 -DDEBUG_SHAREDMEM
+
+CFLAGS_DSP = -g0 -O3 -funroll-loops --param max-unroll-times=200
 
 ## Assembler flags
 ASFLAGS = -c -x assembler-with-cpp
@@ -129,7 +130,7 @@ $(BUILD_DIR)/%_M0.o: lpcopen/lpc_chip_43xx_M0/src/%.c
 
 $(BUILD_DIR)/mydsp_wrap.o: faust_dsp/mydsp.c faust_dsp/mydsp_wrap.c
 	@-echo CC faust-generated: $@
-	$(Q) $(CC) -c $(CFLAGS) $(CFLAGS_M4) $(INCLUDES) $(INCLUDES_M4) -o $@ faust_dsp/mydsp_wrap.c
+	$(Q) $(CC) -c $(CFLAGS) $(CFLAGS_M4) $(CFLAGS_DSP) $(INCLUDES) $(INCLUDES_M4) -o $@ faust_dsp/mydsp_wrap.c
 
 $(BUILD_DIR)/%.o: src/%.c
 	@-echo CC src: $@
@@ -148,6 +149,7 @@ $(BUILD_DIR)/%.o: lpcopen/lpc_chip_43xx_M4/src/%.c
 $(BUILD_DIR)/$(PROJECT)_M0.axf: $(OBJECTS_M0)
 	@-echo 'LD OBJECTS, LIBS -> $@ @M0'
 	$(Q) $(LD) $(CFLAGS) $(CFLAGS_M0) -Wl,--gc-sections -T $(LINKERSCRIPT_M0) $(OBJECTS_M0) -Wl,-Map=$(BUILD_DIR)/$(PROJECT)_M0.map -o $(BUILD_DIR)/$(PROJECT)_M0.axf
+	$(Q) $(SIZE) $@
 
 $(BUILD_DIR)/$(PROJECT).axf: $(OBJECTS) $(BUILD_DIR)/$(PROJECT)_M0.o
 	@-echo 'LD OBJECTS, LIBS, M0 image -> $@'
