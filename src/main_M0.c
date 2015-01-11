@@ -15,7 +15,13 @@ int main_M0() {
     for(;;) {
         i+= 1;
         interface_process();
-        Board_LED_Set(0); Board_Delay(BLINK_DELAY * 50); Board_LED_Set(1); Board_Delay(BLINK_DELAY * 50);
+        Board_Delay(BLINK_DELAY * 100);
+        if (i % 10 == 0) {
+            if ((i / 10) % 2 == 1)
+                Board_LED_Set(1);
+            else
+                Board_LED_Set(0);
+        }
     }
     interface_init();
     interface_process();
