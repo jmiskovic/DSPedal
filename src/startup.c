@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <cmsis.h>
+#include "chip.h"
 
 #define WEAK __attribute__ ((weak))
 #define ALIAS(f) __attribute__ ((weak, alias (#f)))
@@ -108,10 +109,13 @@ void QEI_IRQHandler(void) ALIAS(IntDefaultHandler);
 extern int main(void);
 //*****************************************************************************
 //
-// External declaration for the pointer to the stack top from the Linker Script
+// External declaration for the pointer to the stack top and code section from the Linker Script
 //
 //*****************************************************************************
 extern void _vStackTop(void);
+
+extern unsigned int _vShadowMapM4;
+extern unsigned int __vectors_start__;
 
 //*****************************************************************************
 //
@@ -120,7 +124,7 @@ extern void _vStackTop(void);
 //
 //*****************************************************************************
 extern void (* const g_pfnVectors[])(void);
-__attribute__ ((section(".isr_vector")))
+__attribute__ ((section(".isr_vector"))) __attribute__ ((unused))
 void (* const g_pfnVectors[])(void) = {
     // Core Level - CM4
     &_vStackTop,                    // The initial stack pointer
@@ -206,13 +210,22 @@ void (* const g_pfnVectors[])(void) = {
 
 
 //*****************************************************************************
-// Functions to carry out the initialization of RW and BSS data sections. These
+// Functions to carry out the initialization of RX, RW and BSS data sections. These
 // are written as separate functions rather than being inlined within the
 // ResetISR() function in order to cope with MCUs with multiple banks of
 // memory.
 //*****************************************************************************
-        __attribute__((section(".after_vectors"
-)))
+
+__attribute__ ((section(".after_vectors")))
+void text_init(unsigned int romstart, unsigned int start, unsigned int len) {
+    unsigned int *pulDest = (unsigned int*) start;
+    unsigned int *pulSrc = (unsigned int*) romstart;
+    unsigned int loop;
+    for (loop = 0; loop < len; loop = loop + 4)
+        *pulDest++ = *pulSrc++;
+}
+
+__attribute__((section(".after_vectors")))
 void data_init(unsigned int romstart, unsigned int start, unsigned int len) {
     unsigned int *pulDest = (unsigned int*) start;
     unsigned int *pulSrc = (unsigned int*) romstart;
@@ -236,6 +249,8 @@ void bss_init(unsigned int start, unsigned int len) {
 // contains the load address, execution address and length of each RW data
 // section and the execution and length of each BSS (zero initialized) section.
 //*****************************************************************************
+extern unsigned int __text_section_table;
+extern unsigned int __text_section_table_end;
 extern unsigned int __data_section_table;
 extern unsigned int __data_section_table_end;
 extern unsigned int __bss_section_table;
@@ -306,27 +321,38 @@ void ResetISR(void) {
     unsigned int *SectionTableAddr;
 
     // Load base address of Global Section Table
-    SectionTableAddr = &__data_section_table;
+    SectionTableAddr = &__text_section_table;
 
-    // Copy the data sections from flash to SRAM.
+    // Copy the text sections from flash to SRAM
+    while (SectionTableAddr < &__text_section_table_end) {
+        LoadAddr = *SectionTableAddr++;
+        ExeAddr = *SectionTableAddr++;
+        SectionLen = *SectionTableAddr++;
+        text_init(LoadAddr, ExeAddr, SectionLen);
+    }
+
+    // Copy the data sections from flash to SRAM
     while (SectionTableAddr < &__data_section_table_end) {
         LoadAddr = *SectionTableAddr++;
         ExeAddr = *SectionTableAddr++;
         SectionLen = *SectionTableAddr++;
         data_init(LoadAddr, ExeAddr, SectionLen);
     }
-    // At this point, SectionTableAddr = &__bss_section_table;
+    // At this point, SectionTableAddr = &__bss_section_table
     // Zero fill the bss segment
     while (SectionTableAddr < &__bss_section_table_end) {
         ExeAddr = *SectionTableAddr++;
         SectionLen = *SectionTableAddr++;
         bss_init(ExeAddr, SectionLen);
     }
-    __DSB(); // this starts up M0 core, we want data sections to be initialized properly
-#if defined (__USE_LPCOPEN)
-    SystemInit();
-#endif
-#if defined (__USE_CMSIS)
+
+    /* shadow-mapping memory to where the code (text) is loaded in SRAM */
+    LPC_CREG->MXMEMMAP = (unsigned int) &_vShadowMapM4;
+
+    unsigned int *pSCB_VTOR = (unsigned int *) 0xE000ED08;
+    *pSCB_VTOR = (unsigned int) &__vectors_start__; /* vector table is shadow-mapped to zero */
+
+#if defined (__USE_CMSIS) || defined (__USE_LPCOPEN)
     SystemInit();
 #endif
 

@@ -13,9 +13,9 @@
 #include "board.h"
 #include "adxl345.h"
 
-static uint16_t sensitivity = SENSITIVITY_16g;
 
 static xyz low_pass;
+static uint16_t sensitivity = SENSITIVITY_16g;
 
 /*
  * \fn void ADXL345_Init (void)
