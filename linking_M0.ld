@@ -1,5 +1,3 @@
-INCLUDE "memory_layout.ld"
-
 _vStackTop = ORIGIN(VirtDataM0) + LENGTH(VirtDataM0) - 1;
 
 ENTRY(ResetISR)

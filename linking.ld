@@ -1,5 +1,3 @@
-INCLUDE "memory_layout.ld"
-
 _vStackTop = ORIGIN(VirtDataM4) + LENGTH(VirtDataM4) - 1;
 _vShadowMapM4 = __CopyTextM4;
 _vShadowMapM0 = __CopyTextM0;

@@ -15,8 +15,11 @@ GDB = arm-none-eabi-gdb
 SIZE = arm-none-eabi-size
 FAUST = $(FAUSTPATH)/compiler/faust
 
-LINKERSCRIPT = linking.ld
+LINKERSCRIPT_M4 = linking.ld
 LINKERSCRIPT_M0 = linking_M0.ld
+
+LINKERSCRIPT_FLASH = memory_layout.ld
+LINKERSCRIPT_RAM   = memory_layout_RAM.ld
 
 CORELIB = ../Core
 
@@ -137,11 +140,11 @@ $(BUILD_DIR)/%.o: lpcopen/lpc_chip_43xx_M4/src/%.c
 	@-echo CC lpcopen chip: $@
 	$(Q) $(CC) -c $(CFLAGS) $(CFLAGS_M4) $(INCLUDES) $(INCLUDES_M4) -o $@ $<
 
-# Linking and transforming binary image
+# Linking and transforming binary image for FLASH
 
 $(BUILD_DIR)/$(PROJECT)_M0.axf: $(OBJECTS_M0)
 	@-echo 'LD OBJECTS, LIBS -> $@ @M0'
-	$(Q) $(LD) $(CFLAGS) $(CFLAGS_M0) -Wl,--gc-sections -T $(LINKERSCRIPT_M0) $(OBJECTS_M0) -Wl,-Map=$(BUILD_DIR)/$(PROJECT)_M0.map -o $(BUILD_DIR)/$(PROJECT)_M0.axf
+	$(Q) $(LD) $(CFLAGS) $(CFLAGS_M0) -Wl,--gc-sections -T $(LINKERSCRIPT_FLASH) -T $(LINKERSCRIPT_M0) $(OBJECTS_M0) -Wl,-Map=$(BUILD_DIR)/$(PROJECT)_M0.map -o $@
 
 $(BUILD_DIR)/$(PROJECT)_M0.o: $(BUILD_DIR)/$(PROJECT)_M0.axf
 	@-echo 'OC $< -> $@ @M0'
@@ -149,7 +152,7 @@ $(BUILD_DIR)/$(PROJECT)_M0.o: $(BUILD_DIR)/$(PROJECT)_M0.axf
 
 $(BUILD_DIR)/$(PROJECT).axf: $(OBJECTS) $(BUILD_DIR)/$(PROJECT)_M0.o
 	@-echo 'LD OBJECTS, LIBS, M0 image -> $@'
-	$(Q) $(LD) $(CFLAGS) $(CFLAGS_M4) -Wl,--gc-sections -T $(LINKERSCRIPT) -Wl,-Map=$(BUILD_DIR)/$(PROJECT).map $(OBJECTS) $(BUILD_DIR)/$(PROJECT)_M0.o $(CLIBS) -o $@
+	$(Q) $(LD) $(CFLAGS) $(CFLAGS_M4) -Wl,--gc-sections -T $(LINKERSCRIPT_FLASH) -T $(LINKERSCRIPT_M4) -Wl,-Map=$(BUILD_DIR)/$(PROJECT).map $(OBJECTS) $(BUILD_DIR)/$(PROJECT)_M0.o $(CLIBS) -o $@
 	$(Q) $(SIZE) $@
 
 $(BUILD_DIR)/$(PROJECT).bin: $(BUILD_DIR)/$(PROJECT).axf
@@ -163,19 +166,34 @@ $(BUILD_DIR)/$(PROJECT).bin.hdr: $(BUILD_DIR)/$(PROJECT).bin
 	$(Q) python -c "import os.path; import struct; print('0000000: 1a 3f ' + ' '.join(map(lambda s: '%02x' % ord(s), struct.pack('<H', os.path.getsize('$(BUILD_DIR)/$(PROJECT).bin') / 512 + 1))) + '00 00 00 00 00 00 00 00 ff ff ff ff')" | xxd -g1 -r > $(BUILD_DIR)/header.bin
 	$(Q) cat $(BUILD_DIR)/header.bin $(BUILD_DIR)/$(PROJECT).bin > $(BUILD_DIR)/$(PROJECT).bin.hdr
 
+# Linking and transforming binary image for RAM
+
+$(BUILD_DIR)/RAM_$(PROJECT)_M0.axf: $(OBJECTS_M0)
+	@-echo 'LD OBJECTS, LIBS -> $@ @M0'
+	$(Q) $(LD) $(CFLAGS) $(CFLAGS_M0) -Wl,--gc-sections -T $(LINKERSCRIPT_RAM) -T $(LINKERSCRIPT_M0) $(OBJECTS_M0) -Wl,-Map=$(BUILD_DIR)/$(PROJECT)_M0.map -o $@
+
+$(BUILD_DIR)/RAM_$(PROJECT)_M0.o: $(BUILD_DIR)/RAM_$(PROJECT)_M0.axf
+	@-echo 'OC $< -> $@ @M0'
+	$(Q) $(OC) --target elf32-littlearm --verbose --strip-all $(OC_RENAMES) $< $@
+
+$(BUILD_DIR)/RAM_$(PROJECT).axf: $(OBJECTS) $(BUILD_DIR)/RAM_$(PROJECT)_M0.o
+	@-echo 'LD OBJECTS, LIBS, M0 image -> $@'
+	$(Q) $(LD) $(CFLAGS) $(CFLAGS_M4) -Wl,--gc-sections -T $(LINKERSCRIPT_RAM) -T $(LINKERSCRIPT_M4) -Wl,-Map=$(BUILD_DIR)/$(PROJECT).map $(OBJECTS) $(BUILD_DIR)/RAM_$(PROJECT)_M0.o $(CLIBS) -o $@
+	$(Q) $(SIZE) $@
+
 # Executing and cleaning
 
 ram: $(BUILD_DIR)/$(PROJECT).bin.hdr
 	@-echo downloading firmware to RAM
 	$(Q) dfu-util -d 1fc9:000c -D $(BUILD_DIR)/$(PROJECT).bin.hdr
 
-gdb: $(BUILD_DIR)/$(PROJECT).axf
+gdb: $(BUILD_DIR)/RAM_$(PROJECT).axf
 	$(GDB) $< -q -ex 'target remote localhost:3333' -ex "mon targets lpc43xx.m4" -ex "mon arm semihosting enable"
 
-gdb_M4: $(BUILD_DIR)/$(PROJECT).axf
+gdb_M4: $(BUILD_DIR)/RAM_$(PROJECT).axf
 	$(GDB) $< -q -ex 'target remote localhost:3334' -ex "mon targets lpc43xx.m4" -ex "mon arm semihosting enable"
 
-gdb_M0: $(BUILD_DIR)/$(PROJECT)_M0.axf
+gdb_M0: $(BUILD_DIR)/RAM_$(PROJECT)_M0.axf
 	$(GDB) $< -q -ex 'target remote localhost:3333' -ex "mon targets lpc43xx.m0"
 
 clean:
