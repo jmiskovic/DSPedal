@@ -54,7 +54,7 @@ INCLUDES_M4+= -I lpcopen/lpc_chip_43xx_M4/inc/usbd
 INCLUDES_M0 = -I lpcopen/lpc_chip_43xx_M0/inc
 INCLUDES_M0+= -I lpcopen/lpc_chip_43xx_M0/inc/usbd
 
-OC_RENAMES = --redefine-sym __vectors_start__=__vectors_start_m0 --keep-symbol __vectors_start_m0
+OC_RENAMES = --redefine-sym __vectors_start__=__vectors_start_m0 --keep-symbol __vectors_start_m0 --keep-symbol __bss_section_table_M0 --keep-symbol __bss_section_table_end_M0
 
 OBJECTS = 	$(BUILD_DIR)/startup.o \
 			$(BUILD_DIR)/sysinit.o \
@@ -92,7 +92,7 @@ OBJECTS_M0 = 	$(BUILD_DIR)/main_M0.o \
 				$(BUILD_DIR)/i2c_18xx_43xx_M0.o \
 
 
-all: $(BUILD_DIR)/$(PROJECT).axf
+all: $(BUILD_DIR)/RAM_$(PROJECT).axf
 
 # Faust and assembly compiling rules
 

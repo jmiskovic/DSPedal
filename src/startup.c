@@ -320,37 +320,40 @@ void ResetISR(void) {
     unsigned int LoadAddr, ExeAddr, SectionLen;
     unsigned int *SectionTableAddr;
 
-    // Load base address of Global Section Table
-    SectionTableAddr = &__text_section_table;
+    if ((unsigned int *) &ResetISR < &_vShadowMapM4) { /* execute copying to RAM only if program is loaded into FLASH */
+        // Load base address of Global Section Table
+        SectionTableAddr = &__text_section_table;
 
-    // Copy the text sections from flash to SRAM
-    while (SectionTableAddr < &__text_section_table_end) {
-        LoadAddr = *SectionTableAddr++;
-        ExeAddr = *SectionTableAddr++;
-        SectionLen = *SectionTableAddr++;
-        text_init(LoadAddr, ExeAddr, SectionLen);
-    }
+        // Copy the text sections from flash to SRAM
+        while (SectionTableAddr < &__text_section_table_end) {
+            LoadAddr = *SectionTableAddr++;
+            ExeAddr = *SectionTableAddr++;
+            SectionLen = *SectionTableAddr++;
+            text_init(LoadAddr, ExeAddr, SectionLen);
+        }
 
-    // Copy the data sections from flash to SRAM
-    while (SectionTableAddr < &__data_section_table_end) {
-        LoadAddr = *SectionTableAddr++;
-        ExeAddr = *SectionTableAddr++;
-        SectionLen = *SectionTableAddr++;
-        data_init(LoadAddr, ExeAddr, SectionLen);
-    }
-    // At this point, SectionTableAddr = &__bss_section_table
-    // Zero fill the bss segment
-    while (SectionTableAddr < &__bss_section_table_end) {
-        ExeAddr = *SectionTableAddr++;
-        SectionLen = *SectionTableAddr++;
-        bss_init(ExeAddr, SectionLen);
-    }
+        // Copy the data sections from flash to SRAM
+        while (SectionTableAddr < &__data_section_table_end) {
+            LoadAddr = *SectionTableAddr++;
+            ExeAddr = *SectionTableAddr++;
+            SectionLen = *SectionTableAddr++;
+            data_init(LoadAddr, ExeAddr, SectionLen);
+        }
+        // At this point, SectionTableAddr = &__bss_section_table
+        // Zero fill the bss segment
+        while (SectionTableAddr < &__bss_section_table_end) {
+            ExeAddr = *SectionTableAddr++;
+            SectionLen = *SectionTableAddr++;
+            bss_init(ExeAddr, SectionLen);
+        }
 
-    /* shadow-mapping memory to where the code (text) is loaded in SRAM */
-    LPC_CREG->MXMEMMAP = (unsigned int) &_vShadowMapM4;
+        /* shadow-mapping memory to where the code (text) is loaded in SRAM */
+        LPC_CREG->MXMEMMAP = (unsigned int) &_vShadowMapM4;
+    }
 
     unsigned int *pSCB_VTOR = (unsigned int *) 0xE000ED08;
     *pSCB_VTOR = (unsigned int) &__vectors_start__; /* vector table is shadow-mapped to zero */
+
 
 #if defined (__USE_CMSIS) || defined (__USE_LPCOPEN)
     SystemInit();

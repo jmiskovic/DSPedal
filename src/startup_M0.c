@@ -145,6 +145,17 @@ void(*const g_pfnVectors[]) (void) = {
 	M0SUB_IRQHandler,			    // 47 M0SUB core
 };
 
+__attribute__ ((section(".after_vectors")))
+void bss_init(unsigned int start, unsigned int len) {
+    unsigned int *pulDest = (unsigned int*) start;
+    unsigned int loop;
+    for (loop = 0; loop < len; loop = loop + 4)
+        *pulDest++ = 0;
+}
+
+extern unsigned int __bss_section_table_M0;
+extern unsigned int __bss_section_table_end_M0;
+
 // *****************************************************************************
 // Reset entry point for your code.
 // Sets up a simple runtime environment and initializes the C/C++
@@ -153,6 +164,15 @@ void(*const g_pfnVectors[]) (void) = {
 // *****************************************************************************
 void
 ResetISR(void) {
+    unsigned int LoadAddr, ExeAddr, SectionLen;
+    unsigned int *SectionTableAddr;
+    SectionTableAddr = &__bss_section_table_M0;
+    // Zero fill the bss segment
+    while (SectionTableAddr < &__bss_section_table_end_M0) {
+        ExeAddr = *SectionTableAddr++;
+        SectionLen = *SectionTableAddr++;
+        bss_init(ExeAddr, SectionLen);
+    }
 
 	/* Call SystemInit() for clocking/memory setup prior to scatter load */
 	// SystemInit();

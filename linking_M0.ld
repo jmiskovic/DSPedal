@@ -10,6 +10,11 @@ SECTIONS
          __vectors_start__ = ABSOLUTE(.) ;
         KEEP(*(.isr_vector))
         . = ALIGN(4) ;
+        /* markers for initialising data and bss */
+        __bss_section_table_M0 = .;
+        LONG(    ADDR(.M0_bss));
+        LONG(  SIZEOF(.M0_bss));
+        __bss_section_table_end_M0 = .;
         *(.after_vectors*)
         *(.text*)
     } > VirtTextM0 AT > LoadTextM0

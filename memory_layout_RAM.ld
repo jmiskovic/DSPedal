@@ -11,8 +11,8 @@
 
 MEMORY
 {
-    VirtTextM4    (rx): ORIGIN = 0x00000000, LENGTH = 0xA000 /* 40k -> Shadow Mem */
-    VirtTextM0    (rx): ORIGIN = 0x00000000, LENGTH = 0x8000 /* 32k -> Shadow Mem */
+    VirtTextM4    (rx): ORIGIN = 0x10080000, LENGTH = 0xA000 /* 40k -> Shadow Mem */
+    VirtTextM0    (rx): ORIGIN = 0x10000000, LENGTH = 0x8000 /* 32k -> Shadow Mem */
 
     LoadTextM4    (rx): ORIGIN = 0x10080000, LENGTH = 0xA000 /* 40k -> FlashA */
     LoadTextM0    (rx): ORIGIN = 0x10000000, LENGTH = 0x8000 /* 32k -> FlashB */

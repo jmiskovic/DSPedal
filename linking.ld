@@ -37,8 +37,6 @@ SECTIONS
         __bss_section_table = .;
         LONG(    ADDR(.bss_M4));
         LONG(  SIZEOF(.bss_M4));
-        LONG(    ADDR(.bss_M0));
-        LONG(  SIZEOF(.bss_M0));
         __bss_section_table_end = .;
         __section_table_end = . ;
         *(.after_vectors*)
