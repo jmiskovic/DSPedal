@@ -4,6 +4,7 @@
 
 #define SAMPLE_RATE 48000
 #define BUFFER_SIZE 1
+#define RECORD_LEN 500
 
 extern void main_periodic_task(void);
 
@@ -18,6 +19,10 @@ void sound_blocking_process(void)
     float * input_pointers[] = {&inputs[0][0], &inputs[1][0]};
     float * output_pointers[] = {&outputs[0][0], &outputs[1][0]};
     instanceInitmydsp(dsp, SAMPLE_RATE);
+    volatile __attribute__((unused)) float record[RECORD_LEN];
+    int record_index = 0;
+    volatile __attribute__((unused)) peak = 0;
+
 
     for (;;) {
         for (i = 0; i < BUFFER_SIZE; i++) {
@@ -27,6 +32,9 @@ void sound_blocking_process(void)
             right = (int16_t)(polling_data & 0xFFFF);
             inputs[0][i] = left / 32768.0f;
             inputs[1][i] = right / 32768.0f;
+            record[record_index++] = inputs[0][i];
+            record_index %= RECORD_LEN;
+            peak = left > peak ? left : peak;
         }
         computemydsp(dsp, BUFFER_SIZE, input_pointers, output_pointers);
 
