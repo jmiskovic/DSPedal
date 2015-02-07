@@ -1,5 +1,5 @@
-source cfg/openocd_buspirate.cfg
-source cfg/openocd_lpc4357.cfg
+source cfg/buspirate.ocdcfg
+source cfg/lpc4357.ocdcfg
 
 reset_config srst_only;
 adapter_khz 1000;

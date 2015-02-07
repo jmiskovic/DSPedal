@@ -47,8 +47,9 @@ if { [info exists M0_JTAG_TAPID] } {
 swj_newdap $_CHIPNAME m4 -irlen 4 -ircapture 0x1 -irmask 0xf -expected-id $_M4_JTAG_TAPID
 swj_newdap $_CHIPNAME m0 -irlen 4 -ircapture 0x1 -irmask 0xf -expected-id $_M0_JTAG_TAPID
 
-target create $_CHIPNAME.m0 cortex_m -chain-position $_CHIPNAME.m0
 target create $_CHIPNAME.m4 cortex_m -chain-position $_CHIPNAME.m4
+target create $_CHIPNAME.m0 cortex_m -chain-position $_CHIPNAME.m0
+targets $_CHIPNAME.m4
 
 set _WORKAREASIZE 0x2000
 $_CHIPNAME.m4 configure -work-area-phys 0x10000000 -work-area-size $_WORKAREASIZE

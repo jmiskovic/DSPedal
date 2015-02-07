@@ -1,1 +1,1 @@
-openocd -f cfg/buspirate.ocd -s /ust/local/share/openocd/
+openocd -f cfg/start.ocdcfg -s /ust/local/share/openocd/
