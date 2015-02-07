@@ -21,7 +21,7 @@ void sound_blocking_process(void)
     instanceInitmydsp(dsp, SAMPLE_RATE);
     volatile __attribute__((unused)) float record[RECORD_LEN];
     int record_index = 0;
-    volatile __attribute__((unused)) peak = 0;
+    volatile __attribute__((unused)) int peak = 0;
 
 
     for (;;) {

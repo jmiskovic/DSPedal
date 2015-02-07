@@ -84,12 +84,14 @@ OBJECTS_M0 = 	$(BUILD_DIR)/main_M0.o \
 				$(BUILD_DIR)/startup_M0.o \
 				$(BUILD_DIR)/chip_18xx_43xx_M0.o \
 				$(BUILD_DIR)/clock_18xx_43xx_M0.o \
+				$(BUILD_DIR)/gpio_18xx_43xx_M0.o \
+				$(BUILD_DIR)/i2c_18xx_43xx_M0.o \
+				$(BUILD_DIR)/adc_18xx_43xx_M0.o \
 				$(BUILD_DIR)/board_M0.o \
 				$(BUILD_DIR)/mydsp_wrap_M0.o \
 				$(BUILD_DIR)/interface_M0.o \
+				$(BUILD_DIR)/pots_M0.o \
 				$(BUILD_DIR)/adxl345_M0.o \
-				$(BUILD_DIR)/gpio_18xx_43xx_M0.o \
-				$(BUILD_DIR)/i2c_18xx_43xx_M0.o \
 
 
 all: $(BUILD_DIR)/RAM_$(PROJECT).axf

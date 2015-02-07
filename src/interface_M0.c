@@ -2,70 +2,35 @@
 #include "adxl345.h"
 #include "CUI.h"
 #include "interface.h"
+#include "pots.h"
 #include "faust.h"
 
-Slider slider[10];
-UIGlue glue;
-int active_sliders = 0;
+#define SLIDER_COUNT 10
 
-Slider * xSlider = NULL;
-Slider * ySlider = NULL;
+static Slider slider[SLIDER_COUNT];
+static UIGlue glue;
+static int active_sliders = 0;
 
-Slider * keyboardSlider = NULL;
+static AnalogController pot[3];
+static AnalogController angle;
 
-void openTabBox (void* ui_interface, const char* label) {
+static Slider * keys;
 
-}
-void openHorizontalBox (void* ui_interface, const char* label) {
-
-}
-void openVerticalBox (void* ui_interface, const char* label) {
-
-}
-void closeBox (void* ui_interface) {
-
-}
-
-/* -- active widgets */
-
-void addButton (void* ui_interface, const char* label, FAUSTFLOAT* zone) {
-
-}
-
-void addCheckButton (void* ui_interface, const char* label, FAUSTFLOAT* zone) {
-
-}
-
-void addSlider (void* ui_interface, const char* label, FAUSTFLOAT* zone, FAUSTFLOAT init, FAUSTFLOAT min, FAUSTFLOAT max, FAUSTFLOAT step) {
-    slider[active_sliders].label = label;
-    slider[active_sliders].zone = zone;
-    slider[active_sliders].init = init;
-    slider[active_sliders].min = min;
-    slider[active_sliders].max = max;
-    slider[active_sliders].step = step;
-    if (!keyboardSlider)
-        keyboardSlider = &slider[active_sliders];
-    else if (!xSlider)
-        xSlider = &slider[active_sliders];
-    else
-        ySlider = &slider[active_sliders];
-    active_sliders = active_sliders < sizeof(slider) / sizeof(slider[0]) ? active_sliders + 1 : active_sliders;
-}
-
-/* -- passive display widgets */
-
-void addBargraph (void* ui_interface, const char* label, FAUSTFLOAT* zone, FAUSTFLOAT min, FAUSTFLOAT max) {
-
-}
-
-void declare (void* ui_interface, FAUSTFLOAT* zone, const char* key, const char* value) {
-
-}
-
+static void openTabBox (void* ui_interface, const char* label);
+static void openHorizontalBox (void* ui_interface, const char* label);
+static void openVerticalBox (void* ui_interface, const char* label);
+static void closeBox (void* ui_interface);
+static void addButton (void* ui_interface, const char* label, FAUSTFLOAT* zone);
+static void addSlider (void* ui_interface, const char* label, FAUSTFLOAT* zone, FAUSTFLOAT init, FAUSTFLOAT min, FAUSTFLOAT max, FAUSTFLOAT step);
+static void addCheckButton (void* ui_interface, const char* label, FAUSTFLOAT* zone);
+static void addBargraph (void* ui_interface, const char* label, FAUSTFLOAT* zone, FAUSTFLOAT min, FAUSTFLOAT max);
+static void declare (void* ui_interface, FAUSTFLOAT* zone, const char* key, const char* value);
 
 void interface_init() {
+    pots_init();
+    //ADXL345_Init(MR_2_g);
+    //ADXL345_power_on();
     glue.uiInterface = 0;
-
     glue.openTabBox = openTabBox;
     glue.openHorizontalBox = openHorizontalBox;
     glue.openVerticalBox = openVerticalBox;
@@ -81,20 +46,26 @@ void interface_init() {
 
     mydsp * dsp = (mydsp * ) DSP_MEMORY_BLOCK_START;
     buildUserInterfacemydsp(dsp, &glue);
-    ADXL345_Init(MR_2_g);
-    ADXL345_power_on();
+
 }
 
-xyz min = {0};
-xyz max = {0};
-void update_min_max(xyz acc) {
-    min.x = acc.x < min.x ? acc.x : min.x;
-    min.y = acc.y < min.y ? acc.y : min.y;
-    min.z = acc.z < min.z ? acc.z : min.z;
 
-    max.x = acc.x > max.x ? acc.x : max.x;
-    max.y = acc.y > max.y ? acc.y : max.y;
-    max.z = acc.z > max.z ? acc.z : max.z;
+static void addSlider (void* ui_interface, const char* label, FAUSTFLOAT* zone, FAUSTFLOAT init, FAUSTFLOAT min, FAUSTFLOAT max, FAUSTFLOAT step) {
+    slider[active_sliders].label = label;
+    slider[active_sliders].zone = zone;
+    slider[active_sliders].init = init;
+    slider[active_sliders].min = min;
+    slider[active_sliders].max = max;
+    slider[active_sliders].step = step;
+    /* first couple of sliders are automatically assigned to pots */
+    if (active_sliders < POTS_COUNT) {
+        pot[active_sliders].min = 0;
+        pot[active_sliders].max = 1024;
+        pot[active_sliders].slider = &(slider[active_sliders]);
+    }
+    if (active_sliders == 0)
+        keys = &slider[active_sliders];
+    active_sliders = active_sliders < SLIDER_COUNT - 1 ? active_sliders + 1 : 0;
 }
 
 /* calculate linear mapping of Aval in range [Amin, Amax] to range [Bmin, Bmax] */
@@ -103,40 +74,72 @@ FAUSTFLOAT mapRange(FAUSTFLOAT Amin, FAUSTFLOAT Amax, FAUSTFLOAT Bmin, FAUSTFLOA
 }
 
 void interface_process() {
-    xyz acc = ADXL345_raw_read_acc_xyz();
-    low_pass_filter (&acc);
-    update_min_max(acc);
-    if (xSlider)
-        *(xSlider->zone) = mapRange(min.x, max.x, xSlider->min, xSlider->max, acc.x);
-    else
-        *(ySlider->zone) = mapRange(min.y, max.y, ySlider->min, ySlider->max, acc.y);
+    int i;
+    //xyz acc = ADXL345_raw_read_acc_xyz();
+
+    //if (xSlider)
+    //    *(xSlider->zone) = mapRange(min.x, max.x, xSlider->min, xSlider->max, acc.x);
+
+    for (i = 0; i < POTS_COUNT; i++) {
+        Slider * s = pot[i].slider;
+        if (s == NULL)
+            continue;
+        pot[i].val = pots_read(i);
+        *(s->zone) = mapRange(pot[i].min, pot[i].max, s->min, s->max, pot[i].val);
+    }
 
     uint32_t key = Buttons_GetStatus();
-    if (keyboardSlider != NULL && key) {
+    if (keys != NULL && key) {
         switch (key) {
         case BUTTONS_UP:
-            *(keyboardSlider->zone) += keyboardSlider->step;
-            if (*(keyboardSlider->zone) > keyboardSlider->max)
-                *(keyboardSlider->zone) = keyboardSlider->max;
+            *(keys->zone) += keys->step;
+            if (*(keys->zone) > keys->max)
+                *(keys->zone) = keys->max;
             break;
         case BUTTONS_DOWN:
-            *(keyboardSlider->zone) -= keyboardSlider->step;
-            if (*(keyboardSlider->zone) < keyboardSlider->min)
-                *(keyboardSlider->zone) = keyboardSlider->min;
+            *(keys->zone) -= keys->step;
+            if (*(keys->zone) < keys->min)
+                *(keys->zone) = keys->min;
             break;
         case BUTTONS_RIGHT:
-            keyboardSlider += 1;
-            if (keyboardSlider >= &(slider[active_sliders]))
-                keyboardSlider = &(slider[0]);
-            DEBUGOUT("Selected param %d", (keyboardSlider - &(slider[0])) / sizeof(Slider));
+            keys += 1;
+            if (keys >= &(slider[active_sliders]))
+                keys = &(slider[0]);
+            DEBUGOUT("Selected param %d", (keys - &(slider[0])) / sizeof(Slider));
             break;
         case BUTTONS_LEFT:
-            keyboardSlider -= 1;
-            if (keyboardSlider < &(slider[0]))
-                keyboardSlider = &(slider[active_sliders - 1]);
+            keys -= 1;
+            if (keys < &(slider[0]))
+                keys = &(slider[active_sliders - 1]);
             break;
         default:
             break;
         }
     }
+}
+
+/* stubs */
+
+static void openTabBox (void* ui_interface, const char* label) {
+}
+
+static void openHorizontalBox (void* ui_interface, const char* label) {
+}
+
+static void openVerticalBox (void* ui_interface, const char* label) {
+}
+
+static void closeBox (void* ui_interface) {
+}
+
+static void addButton (void* ui_interface, const char* label, FAUSTFLOAT* zone) {
+}
+
+static void addCheckButton (void* ui_interface, const char* label, FAUSTFLOAT* zone) {
+}
+
+static void addBargraph (void* ui_interface, const char* label, FAUSTFLOAT* zone, FAUSTFLOAT min, FAUSTFLOAT max) {
+}
+
+static void declare (void* ui_interface, FAUSTFLOAT* zone, const char* key, const char* value) {
 }

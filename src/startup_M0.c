@@ -164,7 +164,7 @@ extern unsigned int __bss_section_table_end_M0;
 // *****************************************************************************
 void
 ResetISR(void) {
-    unsigned int LoadAddr, ExeAddr, SectionLen;
+    unsigned int ExeAddr, SectionLen;
     unsigned int *SectionTableAddr;
     SectionTableAddr = &__bss_section_table_M0;
     // Zero fill the bss segment

@@ -10,7 +10,7 @@ int main_M0() {
     DEBUGINIT();
     Board_LED_Set(1);
     Board_Init();
-    Board_Accellerometer_Init();
+    //Board_Accellerometer_Init();
     interface_init();
     for(;;) {
         i+= 1;
