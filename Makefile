@@ -80,18 +80,22 @@ OBJECTS = 	$(BUILD_DIR)/startup.o \
 #			$(BUILD_DIR)/uart_18xx_43xx.o \
 #			$(BUILD_DIR)/i2s.o \
 
-OBJECTS_M0 = 	$(BUILD_DIR)/main_M0.o \
+OBJECTS_M0 = 	$(BUILD_DIR)/bitmaps_M0.o \
 				$(BUILD_DIR)/startup_M0.o \
 				$(BUILD_DIR)/chip_18xx_43xx_M0.o \
 				$(BUILD_DIR)/clock_18xx_43xx_M0.o \
 				$(BUILD_DIR)/gpio_18xx_43xx_M0.o \
 				$(BUILD_DIR)/i2c_18xx_43xx_M0.o \
 				$(BUILD_DIR)/adc_18xx_43xx_M0.o \
+				$(BUILD_DIR)/spi_18xx_43xx_M0.o \
 				$(BUILD_DIR)/board_M0.o \
 				$(BUILD_DIR)/mydsp_wrap_M0.o \
 				$(BUILD_DIR)/interface_M0.o \
 				$(BUILD_DIR)/pots_M0.o \
 				$(BUILD_DIR)/adxl345_M0.o \
+				$(BUILD_DIR)/main_M0.o \
+				$(BUILD_DIR)/graphics_M0.o \
+				$(BUILD_DIR)/PCD8544_M0.o \
 
 
 all: $(BUILD_DIR)/RAM_$(PROJECT).axf
@@ -105,6 +109,10 @@ faust_dsp/mydsp.c: faust_dsp/audio_effect.dsp
 $(BUILD_DIR)/%.o: src/%.s
 	@-echo AS src: $@
 	$(Q) $(AS) -c $(ASFLAGS) -o $@ $<
+
+src/bitmaps_M0.c: $(shell find gfx)
+	@-echo processing PNGs
+	$(Q) python gfx/png2header.py
 
 # Cortex M0 c compiling rules
 
@@ -192,13 +200,11 @@ ram: $(BUILD_DIR)/$(PROJECT).bin.hdr
 gdb: $(BUILD_DIR)/RAM_$(PROJECT).axf
 	$(GDB) $< -q -ex 'target remote localhost:3333' -ex "mon targets lpc43xx.m4" -ex "mon arm semihosting enable"
 
-gdb_M4: $(BUILD_DIR)/RAM_$(PROJECT).axf
-	$(GDB) $< -q -ex 'target remote localhost:3334' -ex "mon targets lpc43xx.m4" -ex "mon arm semihosting enable"
-
 gdb_M0: $(BUILD_DIR)/RAM_$(PROJECT)_M0.axf
-	$(GDB) $< -q -ex 'target remote localhost:3333' -ex "mon targets lpc43xx.m0"
+	$(GDB) $< -q -ex 'target remote localhost:3334' -ex "mon targets lpc43xx.m0"
 
 clean:
 	@-echo cleaning
 	$(Q) find $(BUILD_DIR) -type f -exec rm {} \;
 	$(Q) rm -f ./faust_dsp/mydsp.c
+	$(Q) rm -f ./src/bitmaps_M0.c ./src/bitmaps.h

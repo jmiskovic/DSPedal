@@ -15,7 +15,7 @@ int main_M0() {
     for(;;) {
         i+= 1;
         interface_process();
-        Board_Delay(BLINK_DELAY * 100);
+        //Board_Delay(BLINK_DELAY * 100);
         if (i % 10 == 0) {
             if ((i / 10) % 2 == 1)
                 Board_LED_Set(1);
