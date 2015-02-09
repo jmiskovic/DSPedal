@@ -181,3 +181,15 @@ xyz ADXL345_raw_read_acc_xyz (void)
 
     return acc;
 }
+
+int16_t ADXL345_raw_read_acc(uint8_t axis)
+{
+    volatile uint8_t reg = DATAX0 + axis * 2;
+    uint8_t buffer[2];
+    if (axis > 2)
+        return 0;
+    Chip_I2C_MasterCmdRead(ADXL345_I2C_BUS, ADXL345_ADDRESS_LOW, reg, buffer, 2);
+
+    // calculate acceleration: reading / sensitivity
+    return (int16_t) ((uint16_t) buffer[0] + (buffer[1] << 8));
+}

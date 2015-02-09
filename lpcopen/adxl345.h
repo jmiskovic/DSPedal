@@ -73,6 +73,7 @@ xyz ADXL345_read_offset_xyz (void);
 void ADXL345_write_data_format (void);
 
 xyz ADXL345_raw_read_acc_xyz (void);
+int16_t ADXL345_raw_read_acc(uint8_t axis);
 void low_pass_filter (xyz *measure);
 
 #endif /* ADXL345_H_ */

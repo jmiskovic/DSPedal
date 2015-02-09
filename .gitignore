@@ -1,6 +1,9 @@
 # Output files and precompiled libs
 out/**/*
 libs/**/*
+faust_dsp/mydsp.c
+src/bitmaps.h
+src/bitmaps_M0.c
 
 # Project
 *.sublime*

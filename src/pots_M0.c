@@ -3,8 +3,8 @@
 
 uint8_t pot_channels[POTS_COUNT] = {
     ADC_CH7,        /**< ADC channel 7 */
-    ADC_CH5,        /**< ADC channel 5 */
     ADC_CH6,        /**< ADC channel 6 */
+    ADC_CH5,        /**< ADC channel 5 */
 };
 
 void pots_init() {
