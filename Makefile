@@ -39,6 +39,8 @@ CFLAGS_M0 = -DCORE_M0 -mcpu=cortex-m0 #-DDEBUG_SHAREDMEM
 
 CFLAGS_DSP = -g0 -O3 -funroll-loops --param max-unroll-times=200
 
+FAUST_FLAGS = -I $(FAUSTPATH)/architecture -lang c
+
 ## Assembler flags
 ASFLAGS = -c -x assembler-with-cpp
 
@@ -104,7 +106,11 @@ all: $(BUILD_DIR)/RAM_$(PROJECT).axf
 
 faust_dsp/mydsp.c: faust_dsp/audio_effect.dsp
 	@-echo FAUST src: $<
-	$(Q) $(FAUST) -I $(FAUSTPATH)/architecture -lang c -o $@ $<
+	$(Q) $(FAUST) $(FAUST_FLAGS) -o $@ $<
+
+svg: faust_dsp/audio_effect.dsp
+	$(Q) rm -f ./faust_dsp/audio_effect-svg/*
+	$(Q) $(FAUST) $(FAUST_FLAGS) -svg -f 10000 -o $@ $<
 
 $(BUILD_DIR)/%.o: src/%.s
 	@-echo AS src: $@
@@ -207,4 +213,5 @@ clean:
 	@-echo cleaning
 	$(Q) find $(BUILD_DIR) -type f -exec rm {} \;
 	$(Q) rm -f ./faust_dsp/mydsp.c
+	$(Q) rm -f ./faust_dsp/audio_effect-svg/*
 	$(Q) rm -f ./src/bitmaps_M0.c ./src/bitmaps.h

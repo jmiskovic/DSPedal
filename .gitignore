@@ -2,6 +2,8 @@
 out/**/*
 libs/**/*
 faust_dsp/mydsp.c
+faust_dsp/audio_effect-svg
+
 src/bitmaps.h
 src/bitmaps_M0.c
 
