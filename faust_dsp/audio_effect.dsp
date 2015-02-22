@@ -1,107 +1,57 @@
-declare name        "freeverb";
-declare version     "1.0";
-declare author      "Grame";
-declare license     "BSD";
-declare copyright   "(c) GRAME 2006";
-declare reference   "https://ccrma.stanford.edu/~jos/pasp/Freeverb.html";
+import("math.lib");
 
-//======================================================
-//
-//                      Freeverb
-//        Faster version using fixed delays (20% gain)
-//
-//======================================================
+threshold = >(0.8);
 
-// Constant Parameters
-//--------------------
+trigger = hslider("[1]Trigger", 0, 0, 1, 1) : threshold;
+commit = hslider("[2]Commit", 0, 0, 1, 1) : threshold;
+reset = hslider("[3]Reset", 0, 0, 1, 1) : threshold;
+pan = hslider("[4]Pan", 0.5, 0, 1, 0.05);
+vol = hslider("[5]Vol", 1.0, 0, 1, 0.05);
 
-fixedgain   = 0.015; //value of the gain of fxctrl
-scalewet    = 3.0;
-scaledry    = 2.0;
-scaledamp   = 0.4;
-scaleroom   = 0.28;
-offsetroom  = 0.7;
-initialroom = 0.5;
-initialdamp = 0.5;
-initialwet  = 1.0/scalewet;
-initialdry  = 0;
-initialwidth= 1.0;
-initialmode = 0.0;
-freezemode  = 0.5;
-stereospread= 23;
-allpassfeed = 0.5; //feedback of the delays used in allpass filters
+TABLE_SIZE = int(48000 * 80); // 80 seconds at sample rate
 
 
-// Filter Parameters
-//------------------
+/* UTILITY */
+clamp(minv,maxv) = (_) : max(minv) : min(maxv) : (_);
+pulse(on_trigger, off_trigger) = &(1 - off_trigger) ~ |(on_trigger) : (_);
+visualize(sig, n) = sig : hbargraph("Signal %n[sytle:led]", 0, 1);
 
-combtuningL1    = 1116;
-combtuningL2    = 1188;
-combtuningL3    = 1277;
-combtuningL4    = 1356;
-combtuningL5    = 1422;
-combtuningL6    = 1491;
-combtuningL7    = 1557;
-combtuningL8    = 1617;
+leveler = (_) : *(vol) : (_);
+panner = (_) <: *(1 - pan : sqrt), *(pan : sqrt) : (_,_);
 
-allpasstuningL1 = 556;
-allpasstuningL2 = 441;
-allpasstuningL3 = 341;
-allpasstuningL4 = 225;
+committed = pulse(commit, reset);
+committing = pulse(commit, commit@loop_time);
 
+resetting = pulse(reset, reset@loop_time);
 
-// Control Sliders
-//--------------------
-// Damp : filters the high frequencies of the echoes (especially active for great values of RoomSize)
-// RoomSize : size of the reverberation room
-// Dry : original signal
-// Wet : reverberated signal
+trigger_time = countup(TABLE_SIZE, trigger == 0) : (_);
+loop_time = selector * threshold(1 - (1 - trigger@1) * (trigger) + committed) ~ _ : clamp(1, TABLE_SIZE) : (_)
+    with {
+        selector(x) = if(committed, x, max(trigger_time, x));
+    };
 
-dampSlider      = hslider("Damp",0.5, 0, 1, 0.025)*scaledamp;
-roomsizeSlider  = hslider("RoomSize", 0.5, 0, 1, 0.025)*scaleroom + offsetroom;
-wetSlider       = hslider("Wet", 0.3333, 0, 1, 0.025);
-combfeed        = roomsizeSlider;
+read_index = +(1) ~ %(loop_time + 1) : (_);
+write_index = if(trigger, read_index@1, 0) : (_);
 
-
-// Comb and Allpass filters
-//-------------------------
-
-allpass(dt,fb) = (_,_ <: (*(fb),_:+:@(dt)), -) ~ _ : (!,_);
-
-comb(dt, fb, damp) = (+:@(dt)) ~ (*(1-damp) : (+ ~ *(damp)) : *(fb));
+/* INSTA */
+insta_in_gate = trigger : (_);
+insta_feedback_gate = loop_time > 1 : mute_comitted : mute_retriggered : (_)
+    with {
+        mute_comitted = *(1 - committing@loop_time);
+        mute_retriggered = *(1 - pulse(committed * trigger, (committed * trigger)@loop_time));
+    };
+insta_out_gate = loop_time == loop_time@1 : (_);
+insta_looper = (_) : *(insta_in_gate) : + ~ ( _@loop_time : *(insta_feedback_gate)) : *(insta_out_gate) : (_);
 
 
-// Reverb components
-//------------------
-
-monoReverb(fb1, fb2, damp, spread)
-    = _ <:  comb(combtuningL1+spread, fb1, damp),
-            comb(combtuningL2+spread, fb1, damp),
-            comb(combtuningL3+spread, fb1, damp),
-            comb(combtuningL4+spread, fb1, damp),
-            comb(combtuningL5+spread, fb1, damp),
-            comb(combtuningL6+spread, fb1, damp),
-            comb(combtuningL7+spread, fb1, damp),
-            comb(combtuningL8+spread, fb1, damp)
-        +>
-            allpass (allpasstuningL1+spread, fb2)
-        :   allpass (allpasstuningL2+spread, fb2)
-        :   allpass (allpasstuningL3+spread, fb2)
-        :   allpass (allpasstuningL4+spread, fb2)
-        ;
-
-stereoReverb(fb1, fb2, damp, spread)
-    = + <:  monoReverb(fb1, fb2, damp, 0), monoReverb(fb1, fb2, damp, spread);
+/* PERMA */
+perma_in_gate = committing : (_);
+perma_feedback_gate = 1 - resetting : (_);
+perma_out_gate = 1 : (_);
+perma_looper = (_) : *(perma_in_gate) : + ~ ( _@loop_time : *(perma_feedback_gate)) : *(perma_out_gate) : (_);
 
 
-// fxctrl : add an input gain and a wet-dry control to a stereo FX
-//----------------------------------------------------------------
+stereo_looper = (_) : insta_looper : panner <: ((_,_), (perma_looper, perma_looper)) :> (leveler,leveler) : (_,_);
 
-fxctrl(g,w,Fx) =  _,_ <: (*(g),*(g) : Fx : *(w),*(w)), *(1-w), *(1-w) +> _,_;
-
-// Freeverb
-//---------
-
-freeverb = vgroup("Freeverb", fxctrl(fixedgain, wetSlider, stereoReverb(combfeed, allpassfeed, dampSlider, stereospread)));
-
-process = freeverb;
+process = (_) <: (_ <: (_,_) , stereo_looper) :> (_ , _);
+//process = visualize(committing, 0), visualize(commit, 1), visualize(commit@loop_time, 2), (loop_time : hbargraph("loop time", 0, TABLE_SIZE));
