@@ -12,7 +12,7 @@ static Slider sliders[SLIDER_COUNT];
 static UIGlue glue;
 static int active_sliders = 0;
 
-static AnalogController pots[3];
+static AnalogController pots[POTS_COUNT];
 static AnalogController accel_x;
 static AnalogController accel_y;
 
@@ -183,6 +183,7 @@ static void draw_knob(int8_t x, uint8_t y, uint8_t value) {
     graphics_draw_rect(x + 1, y + 1, width, knobbase_bitmap.height - 2);
     graphics_draw(knobmask_bitmap, and_op, x, y);
 }
+
 
 static void draw_icon(Slider * slider) {
     const bitmap * icon = NULL;
