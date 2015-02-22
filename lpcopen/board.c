@@ -119,17 +119,6 @@ void Board_LED_Toggle()
 	Board_LED_Set(!Board_LED_Test());
 }
 
-void Board_Accellerometer_Init(void)
-{
-	Board_I2C_Init(ADXL345_I2C_BUS);
-	Chip_I2C_Init(ADXL345_I2C_BUS);
-	Chip_I2C_SetClockRate(ADXL345_I2C_BUS, 100000);
-	Chip_I2C_SetMasterEventHandler(ADXL345_I2C_BUS, Chip_I2C_EventHandlerPolling);
-
-	ADXL345_Init(MR_2_g);
-    ADXL345_power_on();
-}
-
 void Board_Buttons_Init(void)
 {
 	Chip_SCU_PinMuxSet(0xE, 0, (SCU_MODE_PULLUP | SCU_MODE_INBUFF_EN | SCU_MODE_ZIF_DIS | SCU_MODE_FUNC4));		/* KEY 0 Sel */

@@ -200,12 +200,6 @@ void Board_UART_Init(LPC_USART_T *pUART);
 void Board_SDMMC_Init(void);
 
 /**
- * @brief   Initialize accellerometer on board (with max sensitivity)
- * @return  Nothing
- */
-void Board_Accellerometer_Init(void);
-
-/**
  * @brief	Initialize button(s) interface on board
  * @return	Nothing
  */
