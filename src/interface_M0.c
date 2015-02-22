@@ -6,7 +6,7 @@
 #include "graphics.h"
 #include "faust.h"
 
-#define SLIDER_COUNT 10
+#define SLIDER_COUNT 15
 
 static Slider sliders[SLIDER_COUNT];
 static UIGlue glue;
@@ -30,7 +30,7 @@ static void declare (void* ui_interface, FAUSTFLOAT* zone, const char* key, cons
 
 static void update_minmax(AnalogController * controller);
 static AnalogController * select_next_controller(AnalogController * current);
-static void draw_text(Slider * slider);
+static void draw_info(Slider * slider);
 static void draw_icon(Slider * slider);
 static void draw_bars(Slider * slider);
 static void draw_knob(int8_t x, uint8_t y, uint8_t value);
@@ -41,6 +41,8 @@ void interface_init() {
     graphics_init();
     ADXL345_Init(MR_2_g);
     ADXL345_power_on();
+    accel_x.val = accel_x.min = accel_x.max = ADXL345_raw_read_acc(0);
+    accel_y.val = accel_y.min = accel_y.max = ADXL345_raw_read_acc(1);
     glue.uiInterface = 0;
     glue.openTabBox = openTabBox;
     glue.openHorizontalBox = openHorizontalBox;
@@ -67,7 +69,7 @@ static void addSlider (void* ui_interface, const char* label, FAUSTFLOAT* zone, 
     sliders[active_sliders].max = max;
     sliders[active_sliders].step = step;
     /* first couple of sliders are automatically assigned to pots */
-    if (active_sliders < POTS_COUNT) {
+    if (active_sliders < 3) {
         pots[active_sliders].min = 0;
         pots[active_sliders].max = 1024;
         sliders[active_sliders].controller = &pots[active_sliders];
@@ -111,21 +113,21 @@ void interface_process() {
 
     debounce -= debounce > 0;
     uint32_t key = Buttons_GetStatus();
-    if (keys != NULL && key) {
+    if (keys != NULL && !debounce && key) {
         switch (key) {
         case BUTTONS_UP:
+            debounce = DEBOUNCE_TIME / 10;
             *(keys->zone) += keys->step;
             if (*(keys->zone) > keys->max)
                 *(keys->zone) = keys->max;
             break;
         case BUTTONS_DOWN:
+            debounce = DEBOUNCE_TIME / 10;
             *(keys->zone) -= keys->step;
             if (*(keys->zone) < keys->min)
                 *(keys->zone) = keys->min;
             break;
         case BUTTONS_RIGHT:
-            if (debounce)
-                break;
             debounce = DEBOUNCE_TIME;
             keys += 1;
             if (keys >= &(sliders[active_sliders]))
@@ -133,16 +135,12 @@ void interface_process() {
             DEBUGOUT("Selected param %d", (keys - &(sliders[0])) / sizeof(Slider));
             break;
         case BUTTONS_LEFT:
-            if (debounce)
-                break;
             debounce = DEBOUNCE_TIME;
             keys -= 1;
             if (keys < &(sliders[0]))
                 keys = &(sliders[0]);
             break;
         case BUTTONS_PRESS:
-            if (debounce)
-                break;
             debounce = DEBOUNCE_TIME;
             keys->controller = select_next_controller(keys->controller);
             break;
@@ -157,26 +155,26 @@ void interface_process() {
 
 static AnalogController * select_next_controller(AnalogController * current) {
     if (current == NULL)
+        return &accel_x;
+    else if (current == &accel_x)
+        return &accel_y;
+    else if (current == &accel_y)
         return &pots[0];
     else if (current == &pots[0])
         return &pots[1];
     else if (current == &pots[1])
         return &pots[2];
-    else if (current == &pots[2])
-        return &accel_x;
-    else if (current == &accel_x)
-        return &accel_y;
     else
         return NULL;
 }
 
-static void draw_text(Slider * slider) {
+static void draw_info(Slider * slider) {
     int16_t whole = (int16_t) (*(slider->zone));
     uint16_t decimal = (int16_t) (*(slider->zone) * 100) - whole * 100;
     char value_buffer[10];
     sprintf(value_buffer, "%3d.%02d", whole, decimal);
-    graphics_write(slider->label, tomthumb_font_bitmap, or_op, 0, LCD_PIXEL_HEIGHT - tomthumb_font_bitmap.height);
-    graphics_write(value_buffer, andale_font_bitmap, or_op, 26, LCD_PIXEL_HEIGHT - tomthumb_font_bitmap.height - andale_font_bitmap.height - 2);
+    graphics_write(slider->label, andale_font_bitmap, or_op, 5, LCD_PIXEL_HEIGHT - andale_font_bitmap.height);
+    graphics_write(value_buffer, andale_font_bitmap, or_op, 26, LCD_PIXEL_HEIGHT - andale_font_bitmap.height - andale_font_bitmap.height - 1);
 }
 
 static void draw_knob(int8_t x, uint8_t y, uint8_t value) {
@@ -205,8 +203,10 @@ static void draw_icon(Slider * slider) {
 static void draw_bars(Slider * slider) {
     uint8_t i;
     bool center = false;
-    static const uint8_t max_height = 30;
-    static const uint8_t width = 4;
+    const uint8_t max_height = 30;
+    const uint8_t width = 3;
+    const uint8_t gap = 1;
+
     uint8_t height;
     for (i = 0; i < active_sliders; i++) {
         if (slider == &sliders[i]) { /* skip center knob (already drawn) */
@@ -215,9 +215,9 @@ static void draw_bars(Slider * slider) {
         }
         height = mapRange(sliders[i].min, sliders[i].max, 0, max_height, *(sliders[i].zone));
         if (!center) {
-            graphics_draw_rect(i * width, max_height - height, width - 1, height);
+            graphics_draw_rect(i * (width + gap), max_height - height, width, height + 1);
         } else {
-            graphics_draw_rect(84 - (active_sliders - i) * width, max_height - height, width - 1, height);
+            graphics_draw_rect(84 - (active_sliders - i) * (width + gap), max_height - height, width, height + 1);
         }
     }
 }
@@ -226,9 +226,9 @@ static void interface_draw(Slider * slider) {
 
     graphics_clear();
     /* write description and current value */
-    draw_text(slider);
+    draw_info(slider);
     /* draw knob */
-    draw_knob(LCD_PIXEL_WIDTH / 2 - knobmask_bitmap.width/2, 10, mapRange(slider->min, slider->max, 0, 255, *(keys->zone)));
+    draw_knob(LCD_PIXEL_WIDTH / 2 - knobmask_bitmap.width/2, 14, mapRange(slider->min, slider->max, 0, 255, *(keys->zone)));
     /* draw control icon */
     draw_icon(slider);
     /* draw bars */
