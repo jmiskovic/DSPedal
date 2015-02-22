@@ -110,7 +110,7 @@ faust_dsp/mydsp.c: faust_dsp/audio_effect.dsp
 
 svg: faust_dsp/audio_effect.dsp
 	$(Q) rm -f ./faust_dsp/audio_effect-svg/*
-	$(Q) $(FAUST) $(FAUST_FLAGS) -svg -f 10000 -o $@ $<
+	$(Q) $(FAUST) $(FAUST_FLAGS) -svg -o $@ $<
 
 $(BUILD_DIR)/%.o: src/%.s
 	@-echo AS src: $@

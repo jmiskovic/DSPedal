@@ -26,6 +26,11 @@ void ADXL345_Init (ADXL345_measurement_range mr)
 {
     uint8_t buffer[2];
 
+    Board_I2C_Init(ADXL345_I2C_BUS);
+    Chip_I2C_Init(ADXL345_I2C_BUS);
+    Chip_I2C_SetClockRate(ADXL345_I2C_BUS, 100000);
+    Chip_I2C_SetMasterEventHandler(ADXL345_I2C_BUS, Chip_I2C_EventHandlerPolling);
+
     /* set the g range (2, 4, 8 or 16 g) */
     switch (mr)
         {

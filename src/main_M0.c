@@ -7,6 +7,7 @@ extern char * sharedmem;
 
 int main_M0() {
     volatile unsigned int i;
+    Board_Delay(BLINK_DELAY * 5000);
     DEBUGINIT();
     Board_Init();
     interface_init();

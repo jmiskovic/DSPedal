@@ -185,7 +185,7 @@ int UDA1380_Init(int input)
 	/* for unknown reasons, writing 0x__3_ to 01H causes failures in writting to registers 10H and above
 	this is why the correct value is written at the end of initialization */
 	UDA1380_REG_Write(UDA_EVALM_CLK, UDA1380_REG_EVALCLK_FINAL_VALUE);
-	Chip_I2C_SetMasterEventHandler(UDA1380_I2C_BUS, old);
+	//Chip_I2C_SetMasterEventHandler(UDA1380_I2C_BUS, old);
 
 	return ret;
 }
