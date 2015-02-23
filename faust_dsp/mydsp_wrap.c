@@ -13,3 +13,5 @@
 
 /* UGLY insertation of faust-generated source code */
 #include "mydsp.c"
+
+_Static_assert(sizeof(mydsp) < 32 * 1024 * 1024, "DSP data does not fit in SDRAM");

@@ -8,7 +8,7 @@ reset = hslider("[3]Reset", 0, 0, 1, 1) : threshold;
 pan = hslider("[4]Pan", 0.5, 0, 1, 0.05);
 vol = hslider("[5]Vol", 1.0, 0, 1, 0.05);
 
-TABLE_SIZE = int(48000 * 80); // 80 seconds at sample rate
+TABLE_SIZE = int(48000 * 21); // 40 seconds at sample rate
 
 
 /* UTILITY */
