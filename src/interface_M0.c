@@ -69,7 +69,7 @@ static void addSlider (void* ui_interface, const char* label, FAUSTFLOAT* zone, 
     sliders[active_sliders].max = max;
     sliders[active_sliders].step = step;
     /* first couple of sliders are automatically assigned to pots */
-    if (active_sliders < 3) {
+    if (active_sliders < POTS_COUNT) {
         pots[active_sliders].min = 0;
         pots[active_sliders].max = 1024;
         sliders[active_sliders].controller = &pots[active_sliders];
@@ -160,10 +160,8 @@ static AnalogController * select_next_controller(AnalogController * current) {
         return &accel_y;
     else if (current == &accel_y)
         return &pots[0];
-    else if (current == &pots[0])
-        return &pots[1];
-    else if (current == &pots[1])
-        return &pots[2];
+    else if (current >= &pots[0] && current <= &pots[POTS_COUNT - 2])
+        return current + 1;
     else
         return NULL;
 }
@@ -184,16 +182,17 @@ static void draw_knob(int8_t x, uint8_t y, uint8_t value) {
     graphics_draw(knobmask_bitmap, and_op, x, y);
 }
 
+const bitmap * const pot_bitmaps[POTS_COUNT] = {&pot1_bitmap, &pot2_bitmap, &pot3_bitmap, &expression1_bitmap, &expression2_bitmap};
 
 static void draw_icon(Slider * slider) {
     const bitmap * icon = NULL;
-    if (slider->controller == &pots[0])
-        icon = &pot1_bitmap;
-    else if (slider->controller == &pots[1])
-        icon = &pot2_bitmap;
-    else if (slider->controller == &pots[2])
-        icon = &pot3_bitmap;
-    else if (slider->controller == &accel_x)
+    for (int i = 0; i < POTS_COUNT; i++) {
+        AnalogController * c = &pots[i];
+        if (slider->controller == c) {
+            icon = pot_bitmaps[i];
+        }
+    }
+    if (slider->controller == &accel_x)
         icon = &accel_x_bitmap;
     else if (slider->controller == &accel_y)
         icon = &accel_y_bitmap;
