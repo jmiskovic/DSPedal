@@ -2,13 +2,13 @@ import("math.lib");
 
 threshold = >(0.8);
 
-trigger = hslider("[1]Trigger", 0, 0, 1, 1) : threshold;
-commit = hslider("[2]Commit", 0, 0, 1, 1) : threshold;
-reset = hslider("[3]Reset", 0, 0, 1, 1) : threshold;
-pan = hslider("[4]Pan", 0.5, 0, 1, 0.05);
-vol = hslider("[5]Vol", 1.0, 0, 1, 0.05);
+commit  = hslider("[1]Commit", 0, 0, 1, 1) : threshold;
+pan     = hslider("[2]Pan", 0.5, 0, 1, 0.05);
+vol     = hslider("[3]Vol", 1.0, 0, 1, 0.05);
+trigger = hslider("[4]Trigger", 1, 0, 1, 1) : 1 - _ : threshold;
+reset   = hslider("[5]Reset", 0, 0, 1, 1) : threshold;
 
-TABLE_SIZE = int(48000 * 21); // 40 seconds at sample rate
+TABLE_SIZE = int(48000 * 21); // seconds at sample rate
 
 
 /* UTILITY */
