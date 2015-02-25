@@ -8,7 +8,7 @@ vol     = hslider("[3]Vol", 1.0, 0, 1, 0.05);
 trigger = hslider("[4]Trigger", 1, 0, 1, 1) : 1 - _ : threshold;
 reset   = hslider("[5]Reset", 0, 0, 1, 1) : threshold;
 
-TABLE_SIZE = int(48000 * 21); // seconds at sample rate
+TABLE_SIZE = int(48000 * 43); // seconds at sample rate
 
 
 /* UTILITY */
@@ -42,9 +42,9 @@ insta_looper = (_) : *(in_gate) : + ~ ( _@loop_time : *(feedback_gate)) : *(out_
         in_gate = trigger : (_);
         feedback_gate = loop_time > 1 : mute_comitted : mute_retriggered : mute_resetted : (_)
             with {
-                mute_comitted = *(1 - committing@loop_time);
-                mute_retriggered = *(1 - pulse(committed * trigger, (committed * trigger)@loop_time));
-                mute_resetted = *(1 - resetting);
+                mute_comitted = *(1 - pulse_duration((1 - committing) & committing@1, loop_time)); // mute feedback for single loop cycle after commiting
+                mute_retriggered = *(1 - pulse_duration(committed * trigger, loop_time)); // mute feedback for single loop cycle if triggered
+                mute_resetted = *(1 - resetting);   // mute feedback for duration of reset sequence
             };
         out_gate = loop_time == loop_time@1 :(_);
     };
