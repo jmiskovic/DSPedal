@@ -349,6 +349,14 @@ void ResetISR(void) {
 
         /* shadow-mapping memory to where the code (text) is loaded in SRAM */
         LPC_CREG->MXMEMMAP = (unsigned int) &_vShadowMapM4;
+    } else {
+        SectionTableAddr = &__bss_section_table;
+        // Zero fill the bss segment
+        while (SectionTableAddr < &__bss_section_table_end) {
+            ExeAddr = *SectionTableAddr++;
+            SectionLen = *SectionTableAddr++;
+            bss_init(ExeAddr, SectionLen);
+        }
     }
 
     unsigned int *pSCB_VTOR = (unsigned int *) 0xE000ED08;
