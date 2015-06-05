@@ -3,7 +3,7 @@ PROJECT = DSPedal
 # comment following line for verbose building
 Q := @
 
-GCCPATH = ../../gcc-arm-none-eabi-4_8-2014q3
+GCCPATH = ../../gcc-arm-none-eabi-4_9-2015q1
 FAUSTPATH = ../../faustcore/
 BUILD_DIR = out
 
