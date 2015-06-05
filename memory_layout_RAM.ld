@@ -21,7 +21,7 @@ MEMORY
     VirtDataM0    (rw): ORIGIN = 0x20000000, LENGTH = 0x7000 /* 28k -> RAM AHB */
 
     LoadDataM4    (rw): ORIGIN = 0x20008000, LENGTH = 0x8000 /* 32k -> FlashA */
-    LoadDataM0    (rw): ORIGIN = 0x20000000, LENGTH = 0x8000 /* 32k -> FlashB */
+    LoadDataM0    (rw): ORIGIN = 0x20000000, LENGTH = 0x7000 /* 32k -> FlashB */
 
     SharedData    (rw): ORIGIN = 0x20007000, LENGTH = 0x1000 /* 4k -> RAM AHB */
 

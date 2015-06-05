@@ -64,7 +64,7 @@ STATIC const PINMUX_GRP_T spifipinmuxing[] = {
     {0x3, 5,  (SCU_PINIO_FAST | SCU_MODE_FUNC3)},    /* SPIFI D2 */
     {0x3, 6,  (SCU_PINIO_FAST | SCU_MODE_FUNC3)},    /* SPIFI D1 */
     {0x3, 7,  (SCU_PINIO_FAST | SCU_MODE_FUNC3)},    /* SPIFI D0 */
-    {0x3, 8,  (SCU_PINIO_FAST | SCU_MODE_FUNC3)}    /* SPIFI CS/SSEL */
+    {0x3, 8,  (SCU_PINIO_FAST | SCU_MODE_FUNC3)}     /* SPIFI CS/SSEL */
 };
 
 STATIC const PINMUX_GRP_T pinmuxing[] = {

@@ -24,7 +24,7 @@ static int M0Image_Boot(uint32_t m0_image_addr)
 /* Set up and initialize hardware prior to call to main */
 void SystemInit(void)
 {
-#if defined(CORE_M3) || defined(CORE_M4)
+#if defined(CORE_M4)
 #if defined(__FPU_PRESENT) && __FPU_PRESENT == 1
     fpuInit();
 #endif
