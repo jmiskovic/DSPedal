@@ -1,20 +1,19 @@
-import("math.lib");
+math = library("math.lib");
 
 threshold = >(0.8);
 
-commit  = hslider("[1]Commit", 0, 0, 1, 1) : threshold;
+reset   = hslider("[1]Reset", 0, 0, 1, 1) : threshold;
 pan     = hslider("[2]Pan", 0.5, 0, 1, 0.05);
 vol     = hslider("[3]Vol", 1.0, 0, 1, 0.05);
 trigger = hslider("[4]Trigger", 1, 0, 1, 1) : 1 - _ : threshold;
-reset   = hslider("[5]Reset", 0, 0, 1, 1) : threshold;
+commit  = hslider("[5]Commit", 0, 0, 1, 1) : threshold;
 
 TABLE_SIZE = int(48000 * 43); // seconds at sample rate
 
-
 /* UTILITY */
 clamp(minv,maxv) = (_) : max(minv) : min(maxv) : (_);
-iter(count, trig) = if(trig>0, min(count, _+1), 0) ~_;
-pulse(on_trigger, off_trigger) = &(1 - off_trigger) ~ |(on_trigger) : (_);
+iter(count, trig) = math.if(trig>0, min(count, _+1), 0) ~_;
+flipflop(on_trigger, off_trigger) = &(1 - off_trigger) ~ |(on_trigger) : (_);
 pulse_duration(trigger, duration) = |(trigger) ~ (iter(duration) : in_count): (_)
     with {
         in_count(x) = (x > 0) & (x < loop_time);
@@ -24,7 +23,7 @@ visualize(sig, n) = sig : hbargraph("Signal %n[sytle:led]", 0, 1);
 leveler = (_) : *(vol) : (_);
 panner = (_) <: *(1 - pan : sqrt), *(pan : sqrt) : (_,_);
 
-committed = pulse(commit, reset);
+committed = flipflop(commit, reset);
 committing = pulse_duration(commit, loop_time);
 resetting = pulse_duration(reset, loop_time);
 
@@ -32,7 +31,7 @@ resetting = pulse_duration(reset, loop_time);
 trigger_time = iter(TABLE_SIZE, trigger) : (_);
 loop_time = value_holder * resetter ~ _ : clamp(1, TABLE_SIZE) : (_)
     with {
-        value_holder(x) = if(committed, x, max(trigger_time, x));   // if perma loop is active, trigger no longer sets the loop time
+        value_holder(x) = math.if(committed, x, max(trigger_time, x));   // if perma loop is active, trigger no longer sets the loop time
         resetter = 1 - (1 - trigger@1) & (trigger) | committed;
     };
 

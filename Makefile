@@ -104,12 +104,12 @@ all: $(BUILD_DIR)/RAM_$(PROJECT).axf
 
 # Faust and assembly compiling rules
 
-faust_dsp/mydsp.c: faust_dsp/audio_effect.dsp
+faust_dsp/mydsp.c: faust_dsp/looper.dsp
 	@-echo FAUST src: $<
 	$(Q) $(FAUST) $(FAUST_FLAGS) -o $@ $<
 
-svg: faust_dsp/audio_effect.dsp
-	$(Q) rm -f ./faust_dsp/audio_effect-svg/*
+svg: faust_dsp/looper.dsp
+	$(Q) rm -f ./faust_dsp/looper-svg/*
 	$(Q) $(FAUST) $(FAUST_FLAGS) -svg -o $@ $<
 
 $(BUILD_DIR)/%.o: src/%.s
@@ -213,5 +213,5 @@ clean:
 	@-echo cleaning
 	$(Q) find $(BUILD_DIR) -type f -exec rm {} \;
 	$(Q) rm -f ./faust_dsp/mydsp.c
-	$(Q) rm -f ./faust_dsp/audio_effect-svg/*
+	$(Q) rm -f ./faust_dsp/looper-svg/*
 	$(Q) rm -f ./src/bitmaps_M0.c ./src/bitmaps.h
