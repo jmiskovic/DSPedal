@@ -63,3 +63,8 @@ stereo_looper = (_) : insta_looper : panner <: ((committing_muter,committing_mut
 
 process = (_) <: (_ <: (_,_) , stereo_looper) :> (_ , _);
 //process = visualize(committing, 0), visualize(commit, 1), visualize(commit@loop_time, 2), (loop_time : hbargraph("loop time", 0, TABLE_SIZE));
+
+// delay_until_zerocross(logic, audio) = flipflop(logic & zerocross(audio), (1-logic) & zerocross(audio))
+//     with {
+//         zerocross(x) = (x > 0) & (x' < 0); //'
+//     };
