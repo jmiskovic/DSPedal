@@ -45,8 +45,8 @@ extern "C"
  */
 
 /* Comment below and uncomment USE_USB1 to enable USB-1 */
-#define USE_USB0
-/* #define USE_USB1 */
+/*#define USE_USB0*/
+#define USE_USB1
 
 /* Manifest constants used by USBD ROM stack. These values SHOULD NOT BE CHANGED
    for advance features which require usage of USB_CORE_CTRL_T structure.

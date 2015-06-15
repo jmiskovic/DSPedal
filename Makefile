@@ -37,7 +37,7 @@ CLIBS = -lc -lm
 CFLAGS_M4 = -DCORE_M4 -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=softfp -DBOOT_M0 #-DDEBUG_SEMIHOSTING
 CFLAGS_M0 = -DCORE_M0 -mcpu=cortex-m0 #-DDEBUG_SHAREDMEM
 
-CFLAGS_DSP = -g0 -O3 -funroll-loops --param max-unroll-times=200
+CFLAGS_DSP = -g0 -O3 -funroll-loops --param max-unroll-times=200 -fPIC
 
 FAUST_FLAGS = -I $(FAUSTPATH)/architecture -lang c
 
@@ -57,6 +57,9 @@ INCLUDES_M0 = -I lpcopen/lpc_chip_43xx_M0/inc
 INCLUDES_M0+= -I lpcopen/lpc_chip_43xx_M0/inc/usbd
 
 OC_RENAMES = --redefine-sym __vectors_start__=__vectors_start_m0 --keep-symbol __vectors_start_m0 --keep-symbol __bss_section_table_M0 --keep-symbol __bss_section_table_end_M0
+
+EFFECTS          = $(wildcard faust_dsp/*.dsp)
+EFFECT_CONTAINERS = $(patsubst %.dsp,%.fx,EFFECTS)
 
 OBJECTS = 	$(BUILD_DIR)/startup.o \
 			$(BUILD_DIR)/sysinit.o \
@@ -79,6 +82,9 @@ OBJECTS = 	$(BUILD_DIR)/startup.o \
 			$(BUILD_DIR)/mem_tests.o \
 			$(BUILD_DIR)/sound.o \
 			$(BUILD_DIR)/mydsp_wrap.o \
+			$(BUILD_DIR)/patcher.o \
+			$(BUILD_DIR)/spifilib_dev_common.o \
+			$(BUILD_DIR)/spifilib_fam_standard_cmd.o \
 #			$(BUILD_DIR)/uart_18xx_43xx.o \
 #			$(BUILD_DIR)/i2s.o \
 
@@ -98,6 +104,7 @@ OBJECTS_M0 = 	$(BUILD_DIR)/bitmaps_M0.o \
 				$(BUILD_DIR)/main_M0.o \
 				$(BUILD_DIR)/graphics_M0.o \
 				$(BUILD_DIR)/PCD8544_M0.o \
+#				$(BUILD_DIR)/patcher_M0.o \
 
 
 all: $(BUILD_DIR)/RAM_$(PROJECT).axf
@@ -111,6 +118,20 @@ faust_dsp/mydsp.c: faust_dsp/looper.dsp
 svg: faust_dsp/looper.dsp
 	$(Q) rm -f ./faust_dsp/looper-svg/*
 	$(Q) $(FAUST) $(FAUST_FLAGS) -svg -o $@ $<
+
+out/%.fx: faust_dsp/%.dsp
+	@-echo FAUST effect container: $@
+	$(Q) $(FAUST) $(FAUST_FLAGS) -o faust_dsp/mydsp.c $<
+	$(Q) $(CC) -c $(CFLAGS) $(CFLAGS_M0) $(INCLUDES) $(INCLUDES_M0) -o out/mydspM0.o faust_dsp/mydsp_wrap.c
+	$(Q) $(CC) -c $(CFLAGS) $(CFLAGS_M4) $(CFLAGS_DSP) $(INCLUDES) $(INCLUDES_M4) -o out/mydspM4.o faust_dsp/mydsp_wrap.c
+	$(Q) $(OC) out/mydspM0.o out/M0gui.dump --only-section=.text.buildUserInterfacemydsp -O binary --gap-fill 0xff
+	$(Q) $(OC) out/mydspM0.o out/M0init.dump --only-section=.text.instanceInitmydsp -O binary --gap-fill 0xff
+	$(Q) $(OC) out/mydspM4.o out/M4dsp.dump --only-section=.text.computemydsp -O binary --gap-fill 0xff
+	$(Q) $(OC) out/mydspM4.o out/M4alloc.dump --only-section=.text.newmydsp -O binary
+	$(Q) python create_fx_container.py --name $(notdir $(basename $@)) --M0gui out/M0gui.dump --M0init out/M0init.dump --M4dsp out/M4dsp.dump --M4alloc out/M4alloc.dump
+#effects: EFFECT_CONTAINERS
+#	@-echo FAUST effect: $<
+#	$(patsubst %.dsp,%.fx,EFFECTS)
 
 $(BUILD_DIR)/%.o: src/%.s
 	@-echo AS src: $@

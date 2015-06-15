@@ -41,6 +41,8 @@ SECTIONS
         __section_table_end = . ;
         *(.after_vectors*)
         *(.text*)
+        __end_of_text_M4 = .;
+        __size_of_text_M4 = LENGTH(LoadTextM4);
     } > VirtTextM4 AT > LoadTextM4
 
     . = ORIGIN(VirtDataM4);
@@ -85,6 +87,8 @@ SECTIONS
        __core_m0app_END__ = .; /* end of slave image */
        ASSERT(!(__core_m0app_START__ == __core_m0app_END__), "No slave code for _core_m0app");
        ASSERT( (ABSOLUTE(__core_m0app_START__) == __vectors_start_m0), "M0APP execute address differs from address provided in source image");
+       __end_of_text_M0 = .;
+       __size_of_text_M0 = LENGTH(LoadTextM0);
     } > VirtTextM0 AT > LoadTextM0
 
     . = ORIGIN(VirtDataM0);

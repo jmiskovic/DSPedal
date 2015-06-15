@@ -299,6 +299,16 @@ void Board_USB1_Init(void) {
 	}
 }
 
+/**
+ * @brief	Handle interrupt from USB
+ * @return	Nothing
+ */
+void USB1_IRQHandler(void)
+{
+	USBD_API->hw->ISR(g_hUsb);
+}
+
+
 void Board_Delay(uint32_t n) {
 	while(n--) {}
 }

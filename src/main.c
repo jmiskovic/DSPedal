@@ -1,6 +1,7 @@
 #include "board.h"
 #include "sound.h"
 #include "sysinit.h"
+#include "patcher.h"
 
 #define BLINK_DELAY 5000
 
@@ -16,6 +17,7 @@ int main() {
     Board_Init();
     DEBUGSTR("boot process completed\n");
 
+    patcher_init();
     sound_init();
     sound_blocking_process();
     return 0;

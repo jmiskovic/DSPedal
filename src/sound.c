@@ -1,8 +1,8 @@
 #include <stdint.h>
+#include "sound.h"
 #include "board.h"
 #include "faust.h"
 
-#define SAMPLE_RATE 48000
 #define BUFFER_SIZE 1
 #define RECORD_LEN 500
 
