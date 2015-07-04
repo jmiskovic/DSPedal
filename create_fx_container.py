@@ -46,6 +46,8 @@ header = struct.pack('<B15sHHHI',
 	len(M4dsp),
 	size_data)
 
+total_size = 0
+
 with open(os.path.join('out', args.name + '.fx'), 'wb') as fx:
 	fx.write(header)
 	fx.write(DELIMIT)
@@ -55,5 +57,6 @@ with open(os.path.join('out', args.name + '.fx'), 'wb') as fx:
 	fx.write(DELIMIT)
 	fx.write(M4dsp)
 	fx.write(DELIMIT)
+	total_size = fx.tell()
 
-print('Created %-15s M0gui=%04X\tM0init=%04X\tM4dsp=%04X\tdata=%08X' % (name, len(M0gui), len(M0init), len(M4dsp), size_data))
+print('Created %-15s M0gui=%04X\tM0init=%04X\tM4dsp=%04X\tdata=%08X\ttotal=%08X (%08d)' % (name, len(M0gui), len(M0init), len(M4dsp), size_data, total_size, total_size))
