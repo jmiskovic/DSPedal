@@ -6,7 +6,7 @@
 #include "board.h"
 
 #define MAX_EFFECT_COUNT (32) // how many effects can be managed by patcher
-static const uint32_t SPIFLASH_EFFECT_SIZE = 1 * 1024 * 1024;
+static const uint32_t SPIFLASH_EFFECT_SIZE = 0x10000; // 64kB, same as erase block size
 static const uint32_t DELIMITER_SIZE = 3;
 
 static const uint32_t SPIFLASH_SIZE = 0x2000000;
@@ -34,7 +34,7 @@ struct EffectInfo {
     uint16_t size_M0initcode;
     uint16_t size_M4dspcode;
     uint32_t size_data;
-};
+} __attribute__((packed));
 
 struct Effect {
     struct Effect * next;
@@ -64,26 +64,44 @@ static void load_code(struct Effect * e);
 static void unload_code(struct Effect * e);
 static void fatalError(char *str, SPIFI_ERR_T errNum);
 static SPIFI_HANDLE_T *spifi_init();
-static SPIFI_ERR_T flash_read(uint32_t * destination, uint32_t * source, uint32_t length);
-static SPIFI_ERR_T flash_program(uint32_t * destination, uint32_t * source, uint32_t length);
+static SPIFI_ERR_T flash_read(const uint32_t * source, uint32_t * destination, uint32_t length);
+static SPIFI_ERR_T flash_program(uint32_t * destination, const uint32_t * source, uint32_t length);
+
+bool test_spifi() {
+    SPIFI_ERR_T errCode;
+    uint32_t * b = (uint32_t *) 0x10088000;
+    //memset(b, 0xDF, 0x100);
+
+    for(unsigned i = 0; i< 50000; i++){}
+
+    //errCode =spifiDevEraseAll(pSpifi);
+    //if (errCode != SPIFI_ERR_NONE) fatalError("eraseAll", errCode);
+
+    //errCode = spifiErase(pSpifi, 0, 1);
+    //if (errCode != SPIFI_ERR_NONE) fatalError("eraseTst", errCode);
+    
+    errCode =  spifiProgram(pSpifi, SPIFLASH_BASE_ADDRESS, b, 2130);
+    if (errCode != SPIFI_ERR_NONE) fatalError("programTst", errCode);
+
+    memset(b, 0x32, 0x100);
+
+    errCode = spifiRead(pSpifi, SPIFLASH_BASE_ADDRESS, b, 2130);
+    if (errCode != SPIFI_ERR_NONE) fatalError("readTst", errCode);
+    for(volatile int db = 0; db == 0;) {} // debugger barrier
+    return b[0];
+}
 
 void patcher_init()
 {
-    SPIFI_ERR_T errCode;
-
     pSpifi = spifi_init();
-    spifiDevGetFamilyName(pSpifi);
-
-    errCode = spifiDevUnlockDevice(pSpifi);
-    if (errCode != SPIFI_ERR_NONE) {
-        fatalError("unlockDevice", errCode);
-    }
-
-    spifiDevSetMemMode(pSpifi, false);
-    spifiDevSetOpts(pSpifi, SPIFI_OPT_USE_QUAD, true);
-
-    for(volatile int b = 0; b == 0;) {} // debugger barrier
+    //test_spifi();
+    //flash_program(0, 0x10088000, 0x100);
+    //memset(0x10088000, 0xff, 0xff);
+    //flash_read   (0, 0x10088000, 0x100);
     construct_available_list();
+    if (available_effects)
+        activate_effect(available_effects);
+    for(volatile int b = 0; b == 0;) {} // debugger barrier
 
     // don't execute but include code for debugging purposes
     volatile int b = 0;
@@ -94,7 +112,13 @@ void patcher_init()
         spifiDevPageProgram(pSpifi, SPIFLASH_BASE_ADDRESS, NULL, 256);
         spifiDevRead(pSpifi, SPIFLASH_BASE_ADDRESS, NULL, 256);
         spifiDevGetInfo(pSpifi, SPIFI_INFO_DEVSIZE); // SPIFI_INFO_ERASE_BLOCKS, SPIFI_INFO_ERASE_BLOCKSIZE, SPIFI_INFO_PAGESIZE, SPIFI_INFO_OPTIONS
+        /*  SPIFI_INFO_DEVSIZE         = 0x2000000
+            SPIFI_INFO_ERASE_BLOCKS    = 0x00200
+            SPIFI_INFO_ERASE_BLOCKSIZE = 0x10000
+            SPIFI_INFO_PAGESIZE        = 0x00100
+            SPIFI_INFO_OPTIONS         = 0x0000c */
         activate_effect(&(effect_pool[0]));
+        spifiDevGetFamilyName(pSpifi);
         deactivate_effect();
     }
 }
@@ -174,7 +198,7 @@ static void list_remove(struct Effect ** phead, struct Effect * del) {
 static bool readHeader(struct EffectInfo * info, uint8_t memindex) {
     SPIFI_ERR_T errCode;
     struct EffectInfo * eb = (struct EffectInfo *) (SPIFLASH_EFFECT_SIZE * memindex);
-    errCode = flash_read((uint32_t *) info, (uint32_t *) eb, sizeof(*info));
+    errCode = flash_read((uint32_t *) eb, (uint32_t *) info, sizeof(*info));
     return errCode == SPIFI_ERR_NONE;
 }
 
@@ -203,7 +227,7 @@ static volatile __attribute__((used)) struct EffectInfo header; // dbg
 
 static void load_code(struct Effect * e) {
     SPIFI_ERR_T errCode;
-    uint32_t effect_start_address = SPIFLASH_BASE_ADDRESS + e->memindex * SPIFLASH_EFFECT_SIZE;
+    uint32_t effect_start_address = e->memindex * SPIFLASH_EFFECT_SIZE;
     uint32_t M0guicode_address = effect_start_address + sizeof(struct EffectInfo) + DELIMITER_SIZE;
     uint32_t M0initcode_address = M0guicode_address + e->info.size_M0guicode + DELIMITER_SIZE;
     uint32_t M4dspcode_address = M0initcode_address + e->info.size_M0initcode + DELIMITER_SIZE;
@@ -214,20 +238,23 @@ static void load_code(struct Effect * e) {
     e->data                    = last_addressData;
 
     // TODO: check for space in all memories
-    errCode = flash_read((uint32_t *) M0initcode_address, (uint32_t *) e->initmydsp, e->info.size_M0initcode);
+    errCode = flash_read((uint32_t *) M0initcode_address,
+        (uint32_t *) e->initmydsp, e->info.size_M0initcode);
     if (errCode != SPIFI_ERR_NONE) fatalError("failed loading M0 init code", errCode);
     
     if (execute_in_place)
         e->initmydsp(e->data, SAMPLE_RATE); // initialize dsp data before overwriting this code block
     
-    errCode = flash_read((uint32_t *) M0guicode_address, (uint32_t *) e->buildUserInterfacemydsp, e->info.size_M0guicode);
+    errCode = flash_read((uint32_t *) M0guicode_address,
+        (uint32_t *) e->buildUserInterfacemydsp, e->info.size_M0guicode);
     if (errCode != SPIFI_ERR_NONE) fatalError("failed loading M0 gui code", errCode);
-    errCode = flash_read((uint32_t *) M4dspcode_address, (uint32_t *) e->computemydsp, e->info.size_M4dspcode);
+    errCode = flash_read((uint32_t *) M4dspcode_address,
+        (uint32_t *) e->computemydsp, e->info.size_M4dspcode);
     if (errCode != SPIFI_ERR_NONE) fatalError("failed loading M4 dsp code", errCode);
 
     if (errCode == SPIFI_ERR_NONE) { // mark memory space as occupied
         last_addressM0   += e->info.size_M0guicode;
-        last_addressM4   += e->info.size_M0initcode;
+        last_addressM4   += e->info.size_M4dspcode;
         last_addressData += e->info.size_data;
     }
 }
@@ -237,6 +264,11 @@ static void unload_code(struct Effect * e) {
     last_addressM0   -= e->info.size_M0guicode;
     last_addressM4   -= e->info.size_M4dspcode;
     last_addressData -= e->info.size_data;
+    // mark function pointers as invalid
+    e->initmydsp               = NULL;
+    e->buildUserInterfacemydsp = NULL;
+    e->computemydsp            = NULL;
+    e->data                    = NULL;
 }
 
 static void fatalError(char *str, SPIFI_ERR_T errNum) {
@@ -245,9 +277,12 @@ static void fatalError(char *str, SPIFI_ERR_T errNum) {
     }
 }
 
+/************************************ flash memory helper functions *************************/
+
 static SPIFI_HANDLE_T *spifi_init() {
     uint32_t memSize;
-    SPIFI_HANDLE_T *pReturnVal;
+    SPIFI_HANDLE_T *pSpifi;
+    SPIFI_ERR_T errCode;
 
     /* Initialize LPCSPIFILIB library, reset the interface */
     spifiInit(LPC_SPIFI_BASE, true);
@@ -261,20 +296,30 @@ static SPIFI_HANDLE_T *spifi_init() {
     }
 
     /* Initialize and detect a device and get device context */
-    pReturnVal = spifiInitDevice(&lmem, sizeof(lmem), LPC_SPIFI_BASE, SPIFLASH_BASE_ADDRESS);
-    if (pReturnVal == NULL) {
+    pSpifi = spifiInitDevice(&lmem, sizeof(lmem), LPC_SPIFI_BASE, SPIFLASH_BASE_ADDRESS);
+    if (pSpifi == NULL) {
         fatalError("spifiInitDevice", SPIFI_ERR_GEN);
     }
-    return pReturnVal;
+
+    spifiDevGetFamilyName(pSpifi);
+
+    errCode = spifiDevUnlockDevice(pSpifi);
+    if (errCode != SPIFI_ERR_NONE) {
+        fatalError("unlockDevice", errCode);
+    }
+
+    spifiDevSetMemMode(pSpifi, false);
+    spifiDevSetOpts(pSpifi, SPIFI_OPT_NOBLOCK, false);
+    spifiDevSetOpts(pSpifi, SPIFI_OPT_USE_QUAD, false);
+
+    return pSpifi;
 }
 
-/************************************ flash memory helper functions *************************/
-
-static volatile bool use_flash = false;
+static volatile bool use_flash = true;
 static const uint32_t RAM_BASE_ADDRESS = 0x10088000;
 #include <string.h>
 
-static SPIFI_ERR_T flash_read(uint32_t * destination, uint32_t * source, uint32_t length) {
+static SPIFI_ERR_T flash_read(const uint32_t * source, uint32_t * destination, uint32_t length) {
     SPIFI_ERR_T errCode = SPIFI_ERR_NONE;
     if (use_flash)
         errCode = spifiRead(pSpifi, SPIFLASH_BASE_ADDRESS + (uint32_t) source, destination, length);
@@ -283,10 +328,10 @@ static SPIFI_ERR_T flash_read(uint32_t * destination, uint32_t * source, uint32_
     return errCode;
  }
 
-static SPIFI_ERR_T flash_program(uint32_t * destination, uint32_t * source, uint32_t length) {
+static SPIFI_ERR_T flash_program(uint32_t * destination, const uint32_t * source, uint32_t length) {
     SPIFI_ERR_T errCode = SPIFI_ERR_NONE;
     if (use_flash) {
-        errCode = spifiEraseByAddr(pSpifi, SPIFLASH_BASE_ADDRESS + (uint32_t) destination, SPIFLASH_BASE_ADDRESS + (uint32_t) destination + length);
+        errCode = spifiErase(pSpifi, ((uint32_t) destination) / SPIFLASH_EFFECT_SIZE, 1);
         if (errCode == SPIFI_ERR_NONE)
             errCode =  spifiProgram(pSpifi, SPIFLASH_BASE_ADDRESS + (uint32_t) destination, source, length);
     } else
