@@ -119,6 +119,9 @@ svg: faust_dsp/looper.dsp
 	$(Q) rm -f ./faust_dsp/looper-svg/*
 	$(Q) $(FAUST) $(FAUST_FLAGS) -svg -o $@ $<
 
+dsp_disassembly:
+	$(Q) $(CC) -c -Wa,-adhln -g $(CFLAGS) $(CFLAGS_M4) $(INCLUDES) $(INCLUDES_M4) faust_dsp/mydsp_wrap.c > out/dsp_disassembly.asm
+
 out/%.fx: faust_dsp/%.dsp
 	@-echo FAUST effect container: $@
 	$(Q) $(FAUST) $(FAUST_FLAGS) -o faust_dsp/mydsp.c $<
