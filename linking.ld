@@ -1,29 +1,31 @@
 _vStackTop = ORIGIN(VirtDataM4) + LENGTH(VirtDataM4) - 1;
-_vShadowMapM4 = __CopyTextM4;
-_vShadowMapM0 = __CopyTextM0;
+
+
+__LMATextM4 = ORIGIN(LoadTextM4);
+__LMATextM0 = ORIGIN(LoadTextM0);
+
+__VMATextM4 = ORIGIN(VirtTextM4);
+__VMATextM0 = ORIGIN(VirtTextM0);
 
 _ResetISR_load = ResetISR;
-
 ENTRY(_ResetISR_load)
 
 SECTIONS
 {
-    . = ORIGIN(VirtTextM4);
-
-    .text_M4 : ALIGN(4)
+    . = ORIGIN(BootTextM4);
+    .boot_M4 : ALIGN(4)
     {
         FILL(0xff)
-         __vectors_start__ = ABSOLUTE(.) ;
         KEEP(*(.isr_vector))
         . = ALIGN(4) ;
         /* markers for initialising data and bss */
         __section_table_start = .;
         __text_section_table = .;
         LONG(LOADADDR(.text_M4));
-        LONG(__CopyTextM4);
+        LONG(__VMATextM4);
         LONG(  SIZEOF(.text_M4));
         LONG(LOADADDR(.text_M0));
-        LONG(__CopyTextM0);
+        LONG(__VMATextM0);
         LONG(  SIZEOF(.text_M0));
         __text_section_table_end = .;
         __data_section_table = .;
@@ -40,6 +42,16 @@ SECTIONS
         __bss_section_table_end = .;
         __section_table_end = . ;
         *(.after_vectors*)
+    } > BootTextM4 AT > BootTextM4
+    
+    . = ORIGIN(VirtTextM4);
+
+    .text_M4 : ALIGN(4)
+    {
+        FILL(0xff)
+         __vectors_start__ = ABSOLUTE(.) ;
+        KEEP(*(.isr_vector))
+        . = ALIGN(4) ;
         *(.text*)
         __end_of_text_M4 = .;
         __size_of_text_M4 = LENGTH(LoadTextM4);

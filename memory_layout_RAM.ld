@@ -11,25 +11,20 @@
 
 MEMORY
 {
-    VirtTextM4    (rx): ORIGIN = 0x10080000, LENGTH = 0xA000 /* 40k -> Shadow Mem */
-    VirtTextM0    (rx): ORIGIN = 0x10000000, LENGTH = 0x8000 /* 32k -> Shadow Mem */
+    VirtTextM4    (rx): ORIGIN = 0x10080400, LENGTH = 0x9C00 /* 39k -> Ram2 */
+    VirtTextM0    (rx): ORIGIN = 0x10000000, LENGTH = 0x8000 /* 32k -> Ram1 */
 
-    LoadTextM4    (rx): ORIGIN = 0x10080000, LENGTH = 0xA000 /* 40k -> FlashA */
-    LoadTextM0    (rx): ORIGIN = 0x10000000, LENGTH = 0x8000 /* 32k -> FlashB */
+    BootTextM4    (rx): ORIGIN = 0x10080000, LENGTH = 0x0400 /*  1k -> FlashA */  
+    LoadTextM4    (rx): ORIGIN = 0x10080400, LENGTH = 0x9C00 /* 39k -> FlashA */
+    LoadTextM0    (rx): ORIGIN = 0x10000000, LENGTH = 0x8000 /* 32k -> Ram1 */
 
     VirtDataM4    (rw): ORIGIN = 0x20008000, LENGTH = 0x8000 /* 32k -> RAM AHB */
     VirtDataM0    (rw): ORIGIN = 0x20000000, LENGTH = 0x7000 /* 28k -> RAM AHB */
 
-    LoadDataM4    (rw): ORIGIN = 0x20008000, LENGTH = 0x8000 /* 32k -> FlashA */
-    LoadDataM0    (rw): ORIGIN = 0x20000000, LENGTH = 0x7000 /* 32k -> FlashB */
+    LoadDataM4    (rw): ORIGIN = 0x20008000, LENGTH = 0x8000 /* 32k -> RamAHB1, RamAHB2ETB */
+    LoadDataM0    (rw): ORIGIN = 0x20000000, LENGTH = 0x7000 /* 32k -> RamAHB1 */
 
     SharedData    (rw): ORIGIN = 0x20007000, LENGTH = 0x1000 /* 4k -> RAM AHB */
 
     SDRAM        (rwx): ORIGIN = 0x28000000, LENGTH = 0x2000000 /* 32M */
 }
-
-/*    CopyTextM4  (!rwx): ORIGIN = 0x10080000, LENGTH = 0xA000  40k -> SRAM 2 */
-/*    CopyTextM0  (!rwx): ORIGIN = 0x10000000, LENGTH = 0x8000  32k -> SRAM 1 */
-
-__CopyTextM4 = 0x10080000;
-__CopyTextM0 = 0x10000000;

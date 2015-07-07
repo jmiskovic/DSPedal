@@ -155,6 +155,7 @@ void bss_init(unsigned int start, unsigned int len) {
 
 extern unsigned int __bss_section_table_M0;
 extern unsigned int __bss_section_table_end_M0;
+extern unsigned int __vectors_start__;
 
 // *****************************************************************************
 // Reset entry point for your code.
@@ -166,6 +167,10 @@ void
 ResetISR(void) {
     unsigned int ExeAddr, SectionLen;
     unsigned int *SectionTableAddr;
+
+    unsigned int *pSCB_VTOR = (unsigned int *) 0xE000ED08;
+    *pSCB_VTOR = (unsigned int) &__vectors_start__;
+
     SectionTableAddr = &__bss_section_table_M0;
     // Zero fill the bss segment
     while (SectionTableAddr < &__bss_section_table_end_M0) {
