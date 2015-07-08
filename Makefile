@@ -140,7 +140,7 @@ $(BUILD_DIR)/%.o: src/%.s
 
 src/bitmaps_M0.c: $(shell find gfx)
 	@-echo processing PNGs
-	$(Q) python gfx/png2header.py
+	$(Q) python scripts/png2header.py
 
 # Cortex M0 c compiling rules
 
