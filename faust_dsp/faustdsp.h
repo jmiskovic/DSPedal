@@ -1,3 +1,6 @@
+#ifndef FAUSTDSP_H
+#define FAUSTDSP_H
+
 #include "CUI.h"
 #include <fastmath.h>
 
@@ -11,7 +14,4 @@
        __typeof__ (b) _b = (b); \
      _a < _b ? _a : _b; })
 
-/* UGLY insertation of faust-generated source code */
-#include "mydsp.c"
-
-_Static_assert(sizeof(mydsp) < 32 * 1024 * 1024, "DSP data does not fit in SDRAM");
+#endif /* FAUSTDSP_H */
