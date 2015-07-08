@@ -36,6 +36,8 @@ static void draw_bars(Slider * slider);
 static void draw_knob(int8_t x, uint8_t y, uint8_t value);
 static void interface_draw(Slider * slider);
 
+void __attribute__((weak)) buildUserInterfacemydsp(mydsp* dsp, UIGlue* interface) {};
+
 void interface_init() {
     pots_init();
     graphics_init();

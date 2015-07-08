@@ -18,6 +18,8 @@ FAUST = $(FAUSTPATH)/compiler/faust
 LINKERSCRIPT_M4 = linking.ld
 LINKERSCRIPT_M0 = linking_M0.ld
 
+LINKERSCRIPT_OVERLAY = $(BUILD_DIR)/linking_overlays.ld
+
 LINKERSCRIPT_FLASH = memory_layout.ld
 LINKERSCRIPT_RAM   = memory_layout_RAM.ld
 
@@ -59,9 +61,10 @@ INCLUDES_M0+= -I lpcopen/lpc_chip_43xx_M0/inc/usbd
 OC_RENAMES_M0BUILD = --redefine-sym __vectors_start__=__vectors_start_m0 --keep-symbol __vectors_start_m0 --keep-symbol __bss_section_table_M0 --keep-symbol __bss_section_table_end_M0
 OC_RENAMES_FXBUILD = --redefine-sym newmydsp=$(*F)_newmydsp --redefine-sym deletemydsp=$(*F)_deletemydsp --redefine-sym metadatamydsp=$(*F)_metadatamydsp --redefine-sym getSampleRatemydsp=$(*F)_getSampleRatemydsp --redefine-sym getNumInputsmydsp=$(*F)_getNumInputsmydsp --redefine-sym getNumOutputsmydsp=$(*F)_getNumOutputsmydsp --redefine-sym getInputRatemydsp=$(*F)_getInputRatemydsp --redefine-sym getOutputRatemydsp=$(*F)_getOutputRatemydsp --redefine-sym classInitmydsp=$(*F)_classInitmydsp --redefine-sym instanceInitmydsp=$(*F)_instanceInitmydsp --redefine-sym initmydsp=$(*F)_initmydsp --redefine-sym buildUserInterfacemydsp=$(*F)_buildUserInterfacemydsp --redefine-sym computemydsp=$(*F)_computemydsp 
 
-EFFECTS          = $(wildcard faust_dsp/*.dsp)
-EFFECT_BASE_NAMES = $(basename $(notdir $^))
-#EFFECT_CONTAINERS = $(patsubst %.dsp,%.fx,$(EFFECTS))
+DSP_SOURCES       = $(wildcard faust_dsp/*.dsp)
+DSP_BASE_NAMES    = $(basename $(notdir $(DSP_SOURCES)))
+DSP_OBJECTS_M4    = $(addsuffix _M4.o,$(addprefix $(BUILD_DIR)/dsp/,$(DSP_BASE_NAMES)))
+#DSP_CONTAINERS = $(patsubst %.dsp,%.fx,$(EFFECTS))
 
 OBJECTS = 	$(BUILD_DIR)/startup.o \
 			$(BUILD_DIR)/sysinit.o \
@@ -83,7 +86,6 @@ OBJECTS = 	$(BUILD_DIR)/startup.o \
 			$(BUILD_DIR)/main.o \
 			$(BUILD_DIR)/mem_tests.o \
 			$(BUILD_DIR)/sound.o \
-			$(BUILD_DIR)/mydsp.o \
 			$(BUILD_DIR)/patcher.o \
 			$(BUILD_DIR)/spifilib_dev_common.o \
 			$(BUILD_DIR)/spifilib_fam_standard_cmd.o \
@@ -99,7 +101,6 @@ OBJECTS_M0 = 	$(BUILD_DIR)/bitmaps_M0.o \
 				$(BUILD_DIR)/adc_18xx_43xx_M0.o \
 				$(BUILD_DIR)/spi_18xx_43xx_M0.o \
 				$(BUILD_DIR)/board_M0.o \
-				$(BUILD_DIR)/mydsp_M0.o \
 				$(BUILD_DIR)/interface_M0.o \
 				$(BUILD_DIR)/pots_M0.o \
 				$(BUILD_DIR)/adxl345_M0.o \
@@ -113,7 +114,7 @@ all: $(BUILD_DIR)/RAM_$(PROJECT).axf
 
 # Faust and assembly compiling rules
 
-faust_dsp/mydsp.c: faust_dsp/looper.dsp
+$(BUILD_DIR)/dsp/%.c: faust_dsp/%.dsp
 	@-echo FAUST src: $<
 	$(Q) $(FAUST) $(FAUST_FLAGS) -o $@ $<
 
@@ -131,9 +132,6 @@ out/%.fx: faust_dsp/%.dsp
 	$(Q) $(CC) -c $(CFLAGS) $(CFLAGS_M4) $(CFLAGS_DSP) $(INCLUDES) $(INCLUDES_M4) -o out/mydspM4.o faust_dsp/mydsp_wrap.c
 	$(Q) $(OC) out/mydspM4.o out/$(*F).o --prefix-sections=.$(*F) $(OC_RENAMES_FXBUILD)
 
-effects: $(EFFECTS)
-	@-echo FAUST effect: $(EFFECT_BASE_NAMES)
-
 $(BUILD_DIR)/%.o: src/%.s
 	@-echo AS src: $@
 	$(Q) $(AS) -c $(ASFLAGS) -o $@ $<
@@ -144,9 +142,11 @@ src/bitmaps_M0.c: $(shell find gfx)
 
 # Cortex M0 c compiling rules
 
-$(BUILD_DIR)/mydsp_M0.o: faust_dsp/mydsp.c
+$(BUILD_DIR)/dsp/%_M0.o: $(BUILD_DIR)/dsp/%.c
 	@-echo CCm0 faust-generated: $@
 	$(Q) $(CC) -c $(CFLAGS) $(CFLAGS_M0) $(INCLUDES) $(INCLUDES_M0) -include faust_dsp/faustdsp.h $< -o $@
+	# change symbol names and prefix sections to avoid linker conflicts
+	$(Q) $(OC) $@ $@ --prefix-sections=.$(*F) $(OC_RENAMES_FXBUILD)
 
 $(BUILD_DIR)/%_M0.o: src/%_M0.c
 	@-echo CCm0 src: $@
@@ -162,9 +162,11 @@ $(BUILD_DIR)/%_M0.o: lpcopen/lpc_chip_43xx_M0/src/%.c
 
 # Cortex M4 c compiling rules
 
-$(BUILD_DIR)/mydsp.o: faust_dsp/mydsp.c
+$(BUILD_DIR)/dsp/%_M4.o: $(BUILD_DIR)/dsp/%.c
 	@-echo CC faust-generated: $@
 	$(Q) $(CC) -c $(CFLAGS) $(CFLAGS_M4) $(CFLAGS_DSP) $(INCLUDES) $(INCLUDES_M4) -include faust_dsp/faustdsp.h $< -o $@
+	# change symbol names and prefix sections to avoid linker conflicts
+	$(Q) $(OC) $@ $@ --prefix-sections=.$(*F) $(OC_RENAMES_FXBUILD)
 
 $(BUILD_DIR)/%.o: src/%.c
 	@-echo CC src: $@
@@ -188,9 +190,10 @@ $(BUILD_DIR)/$(PROJECT)_M0.o: $(BUILD_DIR)/$(PROJECT)_M0.axf
 	@-echo 'OC $< -> $@ @M0'
 	$(Q) $(OC) --target elf32-littlearm --verbose --strip-all $(OC_RENAMES_M0BUILD) $< $@
 
-$(BUILD_DIR)/$(PROJECT).axf: $(OBJECTS) $(BUILD_DIR)/$(PROJECT)_M0.o
+$(BUILD_DIR)/$(PROJECT).axf: $(OBJECTS) $(DSP_OBJECTS_M4) $(BUILD_DIR)/$(PROJECT)_M0.o 
 	@-echo 'LD OBJECTS, LIBS, M0 image -> $@'
-	$(Q) $(LD) $(CFLAGS) $(CFLAGS_M4) -Wl,--gc-sections -T $(LINKERSCRIPT_FLASH) -T $(LINKERSCRIPT_M4) -Wl,-Map=$(BUILD_DIR)/$(PROJECT).map $(OBJECTS) $(BUILD_DIR)/$(PROJECT)_M0.o $(CLIBS) -o $@
+	$(Q) python scripts/create_overlay_linkscript.py $(LINKERSCRIPT_OVERLAY) $(DSP_BASE_NAMES)
+	$(Q) $(LD) $(CFLAGS) $(CFLAGS_M4) -Wl,--gc-sections -T $(LINKERSCRIPT_FLASH) -T $(LINKERSCRIPT_M4) -Wl,-Map=$(BUILD_DIR)/$(PROJECT).map $(OBJECTS) $(DSP_OBJECTS_M4) $(BUILD_DIR)/$(PROJECT)_M0.o $(CLIBS) -o $@
 	$(Q) $(SIZE) $@
 
 $(BUILD_DIR)/$(PROJECT).bin: $(BUILD_DIR)/$(PROJECT).axf
@@ -214,9 +217,10 @@ $(BUILD_DIR)/RAM_$(PROJECT)_M0.o: $(BUILD_DIR)/RAM_$(PROJECT)_M0.axf
 	@-echo 'OC $< -> $@ @M0'
 	$(Q) $(OC) --target elf32-littlearm --verbose --strip-all $(OC_RENAMES_M0BUILD) $< $@
 
-$(BUILD_DIR)/RAM_$(PROJECT).axf: $(OBJECTS) $(BUILD_DIR)/RAM_$(PROJECT)_M0.o
+$(BUILD_DIR)/RAM_$(PROJECT).axf: $(OBJECTS) $(DSP_OBJECTS_M4) $(BUILD_DIR)/RAM_$(PROJECT)_M0.o
 	@-echo 'LD OBJECTS, LIBS, M0 image -> $@'
-	$(Q) $(LD) $(CFLAGS) $(CFLAGS_M4) -Wl,--gc-sections -T $(LINKERSCRIPT_RAM) -T $(LINKERSCRIPT_M4) -Wl,-Map=$(BUILD_DIR)/$(PROJECT).map $(OBJECTS) $(BUILD_DIR)/RAM_$(PROJECT)_M0.o $(CLIBS) -o $@
+	$(Q) python scripts/create_overlay_linkscript.py $(LINKERSCRIPT_OVERLAY) $(DSP_BASE_NAMES)
+	$(Q) $(LD) $(CFLAGS) $(CFLAGS_M4) -Wl,--gc-sections -T $(LINKERSCRIPT_RAM) -T $(LINKERSCRIPT_M4) -T$(LINKERSCRIPT_OVERLAY) -Wl,-Map=$(BUILD_DIR)/$(PROJECT).map $(OBJECTS) $(DSP_OBJECTS_M4) $(BUILD_DIR)/RAM_$(PROJECT)_M0.o $(CLIBS) -o $@
 	$(Q) $(SIZE) $@
 
 # Executing and cleaning
@@ -234,6 +238,5 @@ gdb_M0: $(BUILD_DIR)/RAM_$(PROJECT)_M0.axf
 clean:
 	@-echo cleaning
 	$(Q) find $(BUILD_DIR) -type f -exec rm {} \;
-	$(Q) rm -f ./faust_dsp/mydsp.c
 	$(Q) rm -f ./faust_dsp/looper-svg/*
 	$(Q) rm -f ./src/bitmaps_M0.c ./src/bitmaps.h
