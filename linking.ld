@@ -114,4 +114,19 @@ SECTIONS
     {
         KEEP(*(.M0_bss))
     } > VirtDataM0
+
+    . = ORIGIN(ShadowMap);
+    
+    OVERLAY 0x0000 : NOCROSSREFS
+    {
+        .looperfx
+        { 
+            KEEP(*(.looper*))
+        }
+        
+        .delay_effectfx
+        {
+            KEEP(*(.delay*))
+        }
+    } > ShadowMap
 }

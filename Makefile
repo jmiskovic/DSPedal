@@ -1,7 +1,7 @@
 PROJECT = DSPedal
 
 # comment following line for verbose building
-Q := @
+#Q := @
 
 GCCPATH = ../../gcc-arm-none-eabi-4_9-2015q1
 FAUSTPATH = ../../faustcore/
@@ -37,7 +37,7 @@ CLIBS = -lc -lm
 CFLAGS_M4 = -DCORE_M4 -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=softfp -DBOOT_M0 #-DDEBUG_SEMIHOSTING
 CFLAGS_M0 = -DCORE_M0 -mcpu=cortex-m0 #-DDEBUG_SHAREDMEM
 
-CFLAGS_DSP = -g0 -O3 -funroll-loops --param max-unroll-times=200 -fPIC
+CFLAGS_DSP = -g0 -O3 -funroll-loops --param max-unroll-times=200
 
 FAUST_FLAGS = -I $(FAUSTPATH)/architecture -lang c
 
@@ -56,10 +56,12 @@ INCLUDES_M4+= -I lpcopen/lpc_chip_43xx_M4/inc/usbd
 INCLUDES_M0 = -I lpcopen/lpc_chip_43xx_M0/inc
 INCLUDES_M0+= -I lpcopen/lpc_chip_43xx_M0/inc/usbd
 
-OC_RENAMES = --redefine-sym __vectors_start__=__vectors_start_m0 --keep-symbol __vectors_start_m0 --keep-symbol __bss_section_table_M0 --keep-symbol __bss_section_table_end_M0
+OC_RENAMES_M0BUILD = --redefine-sym __vectors_start__=__vectors_start_m0 --keep-symbol __vectors_start_m0 --keep-symbol __bss_section_table_M0 --keep-symbol __bss_section_table_end_M0
+OC_RENAMES_FXBUILD = --redefine-sym newmydsp=$(*F)_newmydsp --redefine-sym deletemydsp=$(*F)_deletemydsp --redefine-sym metadatamydsp=$(*F)_metadatamydsp --redefine-sym getSampleRatemydsp=$(*F)_getSampleRatemydsp --redefine-sym getNumInputsmydsp=$(*F)_getNumInputsmydsp --redefine-sym getNumOutputsmydsp=$(*F)_getNumOutputsmydsp --redefine-sym getInputRatemydsp=$(*F)_getInputRatemydsp --redefine-sym getOutputRatemydsp=$(*F)_getOutputRatemydsp --redefine-sym classInitmydsp=$(*F)_classInitmydsp --redefine-sym instanceInitmydsp=$(*F)_instanceInitmydsp --redefine-sym initmydsp=$(*F)_initmydsp --redefine-sym buildUserInterfacemydsp=$(*F)_buildUserInterfacemydsp --redefine-sym computemydsp=$(*F)_computemydsp 
 
 EFFECTS          = $(wildcard faust_dsp/*.dsp)
-EFFECT_CONTAINERS = $(patsubst %.dsp,%.fx,EFFECTS)
+EFFECT_BASE_NAMES = $(basename $(notdir $^))
+#EFFECT_CONTAINERS = $(patsubst %.dsp,%.fx,$(EFFECTS))
 
 OBJECTS = 	$(BUILD_DIR)/startup.o \
 			$(BUILD_DIR)/sysinit.o \
@@ -127,14 +129,10 @@ out/%.fx: faust_dsp/%.dsp
 	$(Q) $(FAUST) $(FAUST_FLAGS) -o faust_dsp/mydsp.c $<
 	$(Q) $(CC) -c $(CFLAGS) $(CFLAGS_M0) $(INCLUDES) $(INCLUDES_M0) -o out/mydspM0.o faust_dsp/mydsp_wrap.c
 	$(Q) $(CC) -c $(CFLAGS) $(CFLAGS_M4) $(CFLAGS_DSP) $(INCLUDES) $(INCLUDES_M4) -o out/mydspM4.o faust_dsp/mydsp_wrap.c
-	$(Q) $(OC) out/mydspM0.o out/M0gui.dump --only-section=.text.buildUserInterfacemydsp -O binary --gap-fill 0xff
-	$(Q) $(OC) out/mydspM0.o out/M0init.dump --only-section=.text.instanceInitmydsp -O binary --gap-fill 0xff
-	$(Q) $(OC) out/mydspM4.o out/M4dsp.dump --only-section=.text.computemydsp -O binary --gap-fill 0xff
-	$(Q) $(OC) out/mydspM4.o out/M4alloc.dump --only-section=.text.newmydsp -O binary
-	$(Q) python create_fx_container.py --name $(notdir $(basename $@)) --M0gui out/M0gui.dump --M0init out/M0init.dump --M4dsp out/M4dsp.dump --M4alloc out/M4alloc.dump
-#effects: EFFECT_CONTAINERS
-#	@-echo FAUST effect: $<
-#	$(patsubst %.dsp,%.fx,EFFECTS)
+	$(Q) $(OC) out/mydspM4.o out/$(*F).o --prefix-sections=.$(*F) $(OC_RENAMES_FXBUILD)
+
+effects: $(EFFECTS)
+	@-echo FAUST effect: $(EFFECT_BASE_NAMES)
 
 $(BUILD_DIR)/%.o: src/%.s
 	@-echo AS src: $@
@@ -188,7 +186,7 @@ $(BUILD_DIR)/$(PROJECT)_M0.axf: $(OBJECTS_M0)
 
 $(BUILD_DIR)/$(PROJECT)_M0.o: $(BUILD_DIR)/$(PROJECT)_M0.axf
 	@-echo 'OC $< -> $@ @M0'
-	$(Q) $(OC) --target elf32-littlearm --verbose --strip-all $(OC_RENAMES) $< $@
+	$(Q) $(OC) --target elf32-littlearm --verbose --strip-all $(OC_RENAMES_M0BUILD) $< $@
 
 $(BUILD_DIR)/$(PROJECT).axf: $(OBJECTS) $(BUILD_DIR)/$(PROJECT)_M0.o
 	@-echo 'LD OBJECTS, LIBS, M0 image -> $@'
@@ -214,7 +212,7 @@ $(BUILD_DIR)/RAM_$(PROJECT)_M0.axf: $(OBJECTS_M0)
 
 $(BUILD_DIR)/RAM_$(PROJECT)_M0.o: $(BUILD_DIR)/RAM_$(PROJECT)_M0.axf
 	@-echo 'OC $< -> $@ @M0'
-	$(Q) $(OC) --target elf32-littlearm --verbose --strip-all $(OC_RENAMES) $< $@
+	$(Q) $(OC) --target elf32-littlearm --verbose --strip-all $(OC_RENAMES_M0BUILD) $< $@
 
 $(BUILD_DIR)/RAM_$(PROJECT).axf: $(OBJECTS) $(BUILD_DIR)/RAM_$(PROJECT)_M0.o
 	@-echo 'LD OBJECTS, LIBS, M0 image -> $@'

@@ -27,6 +27,10 @@ committed = flipflop(commit, reset);
 committing = pulse_duration(commit, loop_time);
 resetting = pulse_duration(reset, loop_time);
 
+delay_until_zerocross(logic, audio) = flipflop(logic & zerocross(audio), (1-logic) & zerocross(audio))
+    with {
+        zerocross(x) = (x > 0) & (x' < 0); //'
+    };
 
 trigger_time = iter(TABLE_SIZE, trigger) : (_);
 loop_time = value_holder * resetter ~ _ : clamp(1, TABLE_SIZE) : (_)

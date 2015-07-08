@@ -27,4 +27,6 @@ MEMORY
     SharedData    (rw): ORIGIN = 0x20007000, LENGTH = 0x1000 /* 4k -> RAM AHB */
 
     SDRAM        (rwx): ORIGIN = 0x28000000, LENGTH = 0x2000000 /* 32M */
+
+    ShadowMap    (rwx): ORIGIN = 0x00000000, LENGTH = 0x2800 /* 10k */
 }

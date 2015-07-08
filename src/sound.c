@@ -8,6 +8,9 @@
 
 extern void main_periodic_task(void);
 
+void __attribute__ ((weak)) instanceInitmydsp(mydsp* dsp, int samplingFreq) {}
+void __attribute__ ((weak)) computemydsp(mydsp* dsp, int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs) {}
+
 void sound_blocking_process(void)
 {
     uint32_t polling_data = 0;
