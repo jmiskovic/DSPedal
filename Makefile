@@ -83,7 +83,7 @@ OBJECTS = 	$(BUILD_DIR)/startup.o \
 			$(BUILD_DIR)/main.o \
 			$(BUILD_DIR)/mem_tests.o \
 			$(BUILD_DIR)/sound.o \
-			$(BUILD_DIR)/mydsp_wrap.o \
+			$(BUILD_DIR)/mydsp.o \
 			$(BUILD_DIR)/patcher.o \
 			$(BUILD_DIR)/spifilib_dev_common.o \
 			$(BUILD_DIR)/spifilib_fam_standard_cmd.o \
@@ -99,7 +99,7 @@ OBJECTS_M0 = 	$(BUILD_DIR)/bitmaps_M0.o \
 				$(BUILD_DIR)/adc_18xx_43xx_M0.o \
 				$(BUILD_DIR)/spi_18xx_43xx_M0.o \
 				$(BUILD_DIR)/board_M0.o \
-				$(BUILD_DIR)/mydsp_wrap_M0.o \
+				$(BUILD_DIR)/mydsp_M0.o \
 				$(BUILD_DIR)/interface_M0.o \
 				$(BUILD_DIR)/pots_M0.o \
 				$(BUILD_DIR)/adxl345_M0.o \
@@ -144,9 +144,9 @@ src/bitmaps_M0.c: $(shell find gfx)
 
 # Cortex M0 c compiling rules
 
-$(BUILD_DIR)/mydsp_wrap_M0.o: faust_dsp/mydsp.c faust_dsp/mydsp_wrap.c
+$(BUILD_DIR)/mydsp_M0.o: faust_dsp/mydsp.c
 	@-echo CCm0 faust-generated: $@
-	$(Q) $(CC) -c $(CFLAGS) $(CFLAGS_M0) $(INCLUDES) $(INCLUDES_M0) -o $@ faust_dsp/mydsp_wrap.c
+	$(Q) $(CC) -c $(CFLAGS) $(CFLAGS_M0) $(INCLUDES) $(INCLUDES_M0) -include faust_dsp/faustdsp.h $< -o $@
 
 $(BUILD_DIR)/%_M0.o: src/%_M0.c
 	@-echo CCm0 src: $@
@@ -162,9 +162,9 @@ $(BUILD_DIR)/%_M0.o: lpcopen/lpc_chip_43xx_M0/src/%.c
 
 # Cortex M4 c compiling rules
 
-$(BUILD_DIR)/mydsp_wrap.o: faust_dsp/mydsp.c faust_dsp/mydsp_wrap.c
+$(BUILD_DIR)/mydsp.o: faust_dsp/mydsp.c
 	@-echo CC faust-generated: $@
-	$(Q) $(CC) -c $(CFLAGS) $(CFLAGS_M4) $(CFLAGS_DSP) $(INCLUDES) $(INCLUDES_M4) -o $@ faust_dsp/mydsp_wrap.c
+	$(Q) $(CC) -c $(CFLAGS) $(CFLAGS_M4) $(CFLAGS_DSP) $(INCLUDES) $(INCLUDES_M4) -include faust_dsp/faustdsp.h $< -o $@
 
 $(BUILD_DIR)/%.o: src/%.c
 	@-echo CC src: $@
