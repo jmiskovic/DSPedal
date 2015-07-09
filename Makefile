@@ -59,11 +59,12 @@ INCLUDES_M0 = -I lpcopen/lpc_chip_43xx_M0/inc
 INCLUDES_M0+= -I lpcopen/lpc_chip_43xx_M0/inc/usbd
 
 OC_RENAMES_M0BUILD = --redefine-sym __vectors_start__=__vectors_start_m0 --keep-symbol __vectors_start_m0 --keep-symbol __bss_section_table_M0 --keep-symbol __bss_section_table_end_M0
-OC_RENAMES_FXBUILD = --redefine-sym newmydsp=$(*F)_newmydsp --redefine-sym deletemydsp=$(*F)_deletemydsp --redefine-sym metadatamydsp=$(*F)_metadatamydsp --redefine-sym getSampleRatemydsp=$(*F)_getSampleRatemydsp --redefine-sym getNumInputsmydsp=$(*F)_getNumInputsmydsp --redefine-sym getNumOutputsmydsp=$(*F)_getNumOutputsmydsp --redefine-sym getInputRatemydsp=$(*F)_getInputRatemydsp --redefine-sym getOutputRatemydsp=$(*F)_getOutputRatemydsp --redefine-sym classInitmydsp=$(*F)_classInitmydsp --redefine-sym instanceInitmydsp=$(*F)_instanceInitmydsp --redefine-sym initmydsp=$(*F)_initmydsp --redefine-sym buildUserInterfacemydsp=$(*F)_buildUserInterfacemydsp --redefine-sym computemydsp=$(*F)_computemydsp 
+OC_RENAMES_DSP     = --redefine-sym newmydsp=$(*F)_newmydsp --redefine-sym deletemydsp=$(*F)_deletemydsp --redefine-sym metadatamydsp=$(*F)_metadatamydsp --redefine-sym getSampleRatemydsp=$(*F)_getSampleRatemydsp --redefine-sym getNumInputsmydsp=$(*F)_getNumInputsmydsp --redefine-sym getNumOutputsmydsp=$(*F)_getNumOutputsmydsp --redefine-sym getInputRatemydsp=$(*F)_getInputRatemydsp --redefine-sym getOutputRatemydsp=$(*F)_getOutputRatemydsp --redefine-sym classInitmydsp=$(*F)_classInitmydsp --redefine-sym instanceInitmydsp=$(*F)_instanceInitmydsp --redefine-sym initmydsp=$(*F)_initmydsp --redefine-sym buildUserInterfacemydsp=$(*F)_buildUserInterfacemydsp --redefine-sym computemydsp=$(*F)_computemydsp 
 
 DSP_SOURCES       = $(wildcard faust_dsp/*.dsp)
 DSP_BASE_NAMES    = $(basename $(notdir $(DSP_SOURCES)))
 DSP_OBJECTS_M4    = $(addsuffix _M4.o,$(addprefix $(BUILD_DIR)/dsp/,$(DSP_BASE_NAMES)))
+DSP_OBJECTS_M0    = $(addsuffix _M0.o,$(addprefix $(BUILD_DIR)/dsp/,$(DSP_BASE_NAMES)))
 #DSP_CONTAINERS = $(patsubst %.dsp,%.fx,$(EFFECTS))
 
 OBJECTS = 	$(BUILD_DIR)/startup.o \
@@ -122,16 +123,6 @@ svg: faust_dsp/looper.dsp
 	$(Q) rm -f ./faust_dsp/looper-svg/*
 	$(Q) $(FAUST) $(FAUST_FLAGS) -svg -o $@ $<
 
-dsp_disassembly:
-	$(Q) $(CC) -c -Wa,-adhln -g $(CFLAGS) $(CFLAGS_M4) $(INCLUDES) $(INCLUDES_M4) faust_dsp/mydsp_wrap.c > out/dsp_disassembly.asm
-
-out/%.fx: faust_dsp/%.dsp
-	@-echo FAUST effect container: $@
-	$(Q) $(FAUST) $(FAUST_FLAGS) -o faust_dsp/mydsp.c $<
-	$(Q) $(CC) -c $(CFLAGS) $(CFLAGS_M0) $(INCLUDES) $(INCLUDES_M0) -o out/mydspM0.o faust_dsp/mydsp_wrap.c
-	$(Q) $(CC) -c $(CFLAGS) $(CFLAGS_M4) $(CFLAGS_DSP) $(INCLUDES) $(INCLUDES_M4) -o out/mydspM4.o faust_dsp/mydsp_wrap.c
-	$(Q) $(OC) out/mydspM4.o out/$(*F).o --prefix-sections=.$(*F) $(OC_RENAMES_FXBUILD)
-
 $(BUILD_DIR)/%.o: src/%.s
 	@-echo AS src: $@
 	$(Q) $(AS) -c $(ASFLAGS) -o $@ $<
@@ -140,13 +131,15 @@ src/bitmaps_M0.c: $(shell find gfx)
 	@-echo processing PNGs
 	$(Q) python scripts/png2header.py
 
+# please, leave faust-generated c files alone
+.PRECIOUS: $(BUILD_DIR)/dsp/%.c
+
 # Cortex M0 c compiling rules
 
 $(BUILD_DIR)/dsp/%_M0.o: $(BUILD_DIR)/dsp/%.c
 	@-echo CCm0 faust-generated: $@
 	$(Q) $(CC) -c $(CFLAGS) $(CFLAGS_M0) $(INCLUDES) $(INCLUDES_M0) -include faust_dsp/faustdsp.h $< -o $@
-	# change symbol names and prefix sections to avoid linker conflicts
-	$(Q) $(OC) $@ $@ --prefix-sections=.$(*F) $(OC_RENAMES_FXBUILD)
+	$(Q) $(OC) $@ $@ --prefix-sections=.$(*F) $(OC_RENAMES_DSP)
 
 $(BUILD_DIR)/%_M0.o: src/%_M0.c
 	@-echo CCm0 src: $@
@@ -165,8 +158,7 @@ $(BUILD_DIR)/%_M0.o: lpcopen/lpc_chip_43xx_M0/src/%.c
 $(BUILD_DIR)/dsp/%_M4.o: $(BUILD_DIR)/dsp/%.c
 	@-echo CC faust-generated: $@
 	$(Q) $(CC) -c $(CFLAGS) $(CFLAGS_M4) $(CFLAGS_DSP) $(INCLUDES) $(INCLUDES_M4) -include faust_dsp/faustdsp.h $< -o $@
-	# change symbol names and prefix sections to avoid linker conflicts
-	$(Q) $(OC) $@ $@ --prefix-sections=.$(*F) $(OC_RENAMES_FXBUILD)
+	$(Q) $(OC) $@ $@ --prefix-sections=.$(*F) $(OC_RENAMES_DSP)
 
 $(BUILD_DIR)/%.o: src/%.c
 	@-echo CC src: $@
@@ -182,9 +174,10 @@ $(BUILD_DIR)/%.o: lpcopen/lpc_chip_43xx_M4/src/%.c
 
 # Linking and transforming binary image for FLASH
 
-$(BUILD_DIR)/$(PROJECT)_M0.axf: $(OBJECTS_M0)
+$(BUILD_DIR)/$(PROJECT)_M0.axf: $(OBJECTS_M0) $(DSP_OBJECTS_M0)
 	@-echo 'LD OBJECTS, LIBS -> $@ @M0'
-	$(Q) $(LD) $(CFLAGS) $(CFLAGS_M0) -Wl,--gc-sections -T $(LINKERSCRIPT_FLASH) -T $(LINKERSCRIPT_M0) $(OBJECTS_M0) -Wl,-Map=$(BUILD_DIR)/$(PROJECT)_M0.map -o $@
+	$(Q) python scripts/create_overlay_linkscript.py $(LINKERSCRIPT_OVERLAY) M0 $(DSP_BASE_NAMES)
+	$(Q) $(LD) $(CFLAGS) $(CFLAGS_M0) -Wl,--gc-sections -T $(LINKERSCRIPT_FLASH) -T $(LINKERSCRIPT_M0) -T$(LINKERSCRIPT_OVERLAY) $(OBJECTS_M0) $(DSP_OBJECTS_M0) -Wl,-Map=$(BUILD_DIR)/$(PROJECT)_M0.map -o $@
 
 $(BUILD_DIR)/$(PROJECT)_M0.o: $(BUILD_DIR)/$(PROJECT)_M0.axf
 	@-echo 'OC $< -> $@ @M0'
@@ -192,7 +185,7 @@ $(BUILD_DIR)/$(PROJECT)_M0.o: $(BUILD_DIR)/$(PROJECT)_M0.axf
 
 $(BUILD_DIR)/$(PROJECT).axf: $(OBJECTS) $(DSP_OBJECTS_M4) $(BUILD_DIR)/$(PROJECT)_M0.o 
 	@-echo 'LD OBJECTS, LIBS, M0 image -> $@'
-	$(Q) python scripts/create_overlay_linkscript.py $(LINKERSCRIPT_OVERLAY) $(DSP_BASE_NAMES)
+	$(Q) python scripts/create_overlay_linkscript.py $(LINKERSCRIPT_OVERLAY) M4 $(DSP_BASE_NAMES)
 	$(Q) $(LD) $(CFLAGS) $(CFLAGS_M4) -Wl,--gc-sections -T $(LINKERSCRIPT_FLASH) -T $(LINKERSCRIPT_M4) -Wl,-Map=$(BUILD_DIR)/$(PROJECT).map $(OBJECTS) $(DSP_OBJECTS_M4) $(BUILD_DIR)/$(PROJECT)_M0.o $(CLIBS) -o $@
 	$(Q) $(SIZE) $@
 
@@ -209,9 +202,10 @@ $(BUILD_DIR)/$(PROJECT).bin.hdr: $(BUILD_DIR)/$(PROJECT).bin
 
 # Linking and transforming binary image for RAM
 
-$(BUILD_DIR)/RAM_$(PROJECT)_M0.axf: $(OBJECTS_M0)
+$(BUILD_DIR)/RAM_$(PROJECT)_M0.axf: $(OBJECTS_M0) $(DSP_OBJECTS_M0)
 	@-echo 'LD OBJECTS, LIBS -> $@ @M0'
-	$(Q) $(LD) $(CFLAGS) $(CFLAGS_M0) -Wl,--gc-sections -T $(LINKERSCRIPT_RAM) -T $(LINKERSCRIPT_M0) $(OBJECTS_M0) -Wl,-Map=$(BUILD_DIR)/$(PROJECT)_M0.map -o $@
+	$(Q) python scripts/create_overlay_linkscript.py $(LINKERSCRIPT_OVERLAY) M0 $(DSP_BASE_NAMES)
+	$(Q) $(LD) $(CFLAGS) $(CFLAGS_M0) -Wl,--gc-sections -T $(LINKERSCRIPT_RAM) -T $(LINKERSCRIPT_M0) -T$(LINKERSCRIPT_OVERLAY) $(OBJECTS_M0) $(DSP_OBJECTS_M0) -Wl,-Map=$(BUILD_DIR)/$(PROJECT)_M0.map -o $@
 
 $(BUILD_DIR)/RAM_$(PROJECT)_M0.o: $(BUILD_DIR)/RAM_$(PROJECT)_M0.axf
 	@-echo 'OC $< -> $@ @M0'
@@ -219,7 +213,7 @@ $(BUILD_DIR)/RAM_$(PROJECT)_M0.o: $(BUILD_DIR)/RAM_$(PROJECT)_M0.axf
 
 $(BUILD_DIR)/RAM_$(PROJECT).axf: $(OBJECTS) $(DSP_OBJECTS_M4) $(BUILD_DIR)/RAM_$(PROJECT)_M0.o
 	@-echo 'LD OBJECTS, LIBS, M0 image -> $@'
-	$(Q) python scripts/create_overlay_linkscript.py $(LINKERSCRIPT_OVERLAY) $(DSP_BASE_NAMES)
+	$(Q) python scripts/create_overlay_linkscript.py $(LINKERSCRIPT_OVERLAY) M4 $(DSP_BASE_NAMES)
 	$(Q) $(LD) $(CFLAGS) $(CFLAGS_M4) -Wl,--gc-sections -T $(LINKERSCRIPT_RAM) -T $(LINKERSCRIPT_M4) -T$(LINKERSCRIPT_OVERLAY) -Wl,-Map=$(BUILD_DIR)/$(PROJECT).map $(OBJECTS) $(DSP_OBJECTS_M4) $(BUILD_DIR)/RAM_$(PROJECT)_M0.o $(CLIBS) -o $@
 	$(Q) $(SIZE) $@
 
