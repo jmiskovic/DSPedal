@@ -84,14 +84,14 @@
 #define UDA1380_REG_I2S_DEFAULT_VALUE        0x0000
 
 #define UDA1380_REG_PWRCTRL_DEFAULT_VALUE    (1 << 15 | 1 << 13 | 1 << 10 | 1 << 8 | 1 << 6 | 1 << 4 | 0x0F)
-#define UDA1380_REG_ANAMIX_DEFAULT_VALUE     0x0b0b /* 0 dB analog volume control */
-#define UDA1380_REG_HEADAMP_DEFAULT_VALUE    ( 1 << 9 | 2)
+#define UDA1380_REG_ANAMIX_DEFAULT_VALUE     0x0b0b /* 0 dB analog volume, stereo from 0b00000000 (16.5 dB) to 0b00101100 (-inf dB) */
+#define UDA1380_REG_HEADAMP_DEFAULT_VALUE    ( 1 << 9 | 2) /* enabled short circuit protection on headphone amp */
 
-#define UDA1380_REG_MSTRVOL_DEFAULT_VALUE    0x0000
-#define UDA1380_REG_MIXVOL_DEFAULT_VALUE     0x0000
-#define UDA1380_REG_MODEBBT_DEFAULT_VALUE    0x0000
-#define UDA1380_REG_MSTRMUTE_DEFAULT_VALUE   (3 << 8 | 3)
-#define UDA1380_REG_MIXSDO_DEFAULT_VALUE     0x0000
+#define UDA1380_REG_MSTRVOL_DEFAULT_VALUE    0x0000 /* 0 dB master volume, stereo from 0b00000000 (0 dB) to 0b11111100 (-inf dB) */
+#define UDA1380_REG_MIXVOL_DEFAULT_VALUE     0x0000 /* 0 dB digital mixer volume, stereo from 0b00000000 (0 dB) to 0b11100100 (-inf dB) */
+#define UDA1380_REG_MODEBBT_DEFAULT_VALUE    0x0000 /* mode, bass, treble equalizer */
+#define UDA1380_REG_MSTRMUTE_DEFAULT_VALUE   (3 << 8 | 3) /* 48kHz de-emphasis on both channels; channel muting disabled */
+#define UDA1380_REG_MIXSDO_DEFAULT_VALUE     (1 << 14) /* 5-th order noise shaper; no silence detection */
 
 #define UDA1380_REG_DECVOL_DEFAULT_VALUE     0x0000 /* 0dB on ADC input signal */
 #define UDA1380_REG_PGA_DEFAULT_VALUE        0x0000
