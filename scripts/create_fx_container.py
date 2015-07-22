@@ -1,9 +1,46 @@
 import argparse
 import struct
 import os
+import re
 
 DELIMIT = '_|_'
 MAGIC   = ord('@')
+
+def struct_size_from_dwarf(dwarf_file):
+	"""	
+	 <1><39f>: Abbrev Number: 3 (DW_TAG_typedef)
+	    <3a0>   DW_AT_name        : (indirect string, offset: 0x666): mydsp	
+	    <3a4>   DW_AT_decl_file   : 1	
+	    <3a5>   DW_AT_decl_line   : 35	
+	    <3a6>   DW_AT_type        : <0x2fe>		
+	 <1><2fe>: Abbrev Number: 9 (DW_TAG_structure_type)
+	    <2ff>   DW_AT_byte_size   : 60	
+	    <300>   DW_AT_decl_file   : 1	
+	    <301>   DW_AT_decl_line   : 22	
+	    <302>   DW_AT_sibling     : <0x37f>	    
+	"""
+	struct_size = None
+	found_record = False
+	struct_id = 'xxx'
+	for line in dwarf_file:
+		if 'DW_AT_name' in line and 'mydsp' in line:
+			found_record = True
+			continue
+		if found_record and 'DW_AT_type' in line:
+			struct_id = re.findall(r'(?<=\<0x)[0-9a-f]+', line)[0]
+			break;
+
+	dwarf_file.seek(0)
+
+	found_record = False
+	for line in dwarf_file:
+		if 'DW_TAG_structure_type' in line and struct_id in line:
+			found_record = True
+			continue
+		if found_record and 'DW_AT_byte_size' in line:
+			struct_size = re.findall(r'(?<=\: )[x0-9a-f]+', line)[0]
+			break
+	return int(struct_size,0)
 
 parser = argparse.ArgumentParser(description='Construct fx effect container from code dumps')
 
@@ -26,7 +63,7 @@ with open(args.M0init, 'rb') as f:
 with open(args.M4dsp, 'rb') as f:
 	M4dsp = f.read()
 with open(args.M4alloc, 'rb') as f:
-	M4alloc = f.read()
+	size_data = struct_size_from_dwarf(f)
 
 # struct EffectHeader {
 #     char magicPattern;
@@ -36,8 +73,6 @@ with open(args.M4alloc, 'rb') as f:
 #     uint16_t size_M4dspcode;
 #     uint32_t size_data;
 # };
-
-size_data = struct.unpack('<I', M4alloc[-4:])[0] # last four bytes contain data size, for passing into malloc function
 
 header = struct.pack('<B15sHHHI',
 	MAGIC,
@@ -60,4 +95,4 @@ with open(args.out, 'wb') as fx:
 	fx.write(DELIMIT)
 	total_size = fx.tell()
 
-print('Created %-15s M0gui=%04X\tM0init=%04X\tM4dsp=%04X\tdata=%08X\ttotal=%08X (%08d)' % (name, len(M0gui), len(M0init), len(M4dsp), size_data, total_size, total_size))
+print('Created %-15s M0gui=%04X\tM0init=%04X\tM4dsp=%04X\tSDRAM=%08X\ttotal=%08X (%08d)' % (name, len(M0gui), len(M0init), len(M4dsp), size_data, total_size, total_size))

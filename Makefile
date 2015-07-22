@@ -1,7 +1,7 @@
 PROJECT = DSPedal
 
 # comment following line for verbose building
-#Q := @
+Q := @
 
 GCCPATH = ../../gcc-arm-none-eabi-4_9-2015q1
 FAUSTPATH = ../../faustcore/
@@ -11,6 +11,7 @@ CC = arm-none-eabi-gcc
 AS = arm-none-eabi-gcc
 LD = arm-none-eabi-gcc
 OC = arm-none-eabi-objcopy
+OD = arm-none-eabi-objdump
 GDB = arm-none-eabi-gdb
 SIZE = arm-none-eabi-size
 FAUST = $(FAUSTPATH)/compiler/faust
@@ -39,7 +40,7 @@ CLIBS = -lc -lm
 CFLAGS_M4 = -DCORE_M4 -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=softfp -DBOOT_M0 #-DDEBUG_SEMIHOSTING
 CFLAGS_M0 = -DCORE_M0 -mcpu=cortex-m0 #-DDEBUG_SHAREDMEM
 
-CFLAGS_DSP = -g0 -O3 -funroll-loops --param max-unroll-times=200
+CFLAGS_DSP = -g3 -O3 -funroll-loops --param max-unroll-times=200
 
 FAUST_FLAGS = -I $(FAUSTPATH)/architecture -lang c
 
@@ -65,6 +66,7 @@ DSP_SOURCES       = $(wildcard faust_dsp/*.dsp)
 DSP_BASE_NAMES    = $(basename $(notdir $(DSP_SOURCES)))
 DSP_OBJECTS_M4    = $(addsuffix _M4.o,$(addprefix $(BUILD_DIR)/dsp/,$(DSP_BASE_NAMES)))
 DSP_OBJECTS_M0    = $(addsuffix _M0.o,$(addprefix $(BUILD_DIR)/dsp/,$(DSP_BASE_NAMES)))
+DSP_CSOURCE_FILES = $(addsuffix .c,   $(addprefix $(BUILD_DIR)/dsp/,$(DSP_BASE_NAMES)))
 DSP_FX_FILES	  = $(addsuffix .fx  ,$(addprefix $(BUILD_DIR)/dsp/,$(DSP_BASE_NAMES)))
 #DSP_CONTAINERS = $(patsubst %.dsp,%.fx,$(EFFECTS))
 
@@ -133,7 +135,7 @@ src/bitmaps_M0.c: $(shell find gfx)
 	$(Q) python scripts/png2header.py
 
 # please, leave faust-generated c files alone
-.PRECIOUS: $(BUILD_DIR)/dsp/%.c
+.SECONDARY: $(DSP_CSOURCE_FILES)
 
 # Cortex M0 c compiling rules
 
@@ -159,6 +161,7 @@ $(BUILD_DIR)/%_M0.o: lpcopen/lpc_chip_43xx_M0/src/%.c
 $(BUILD_DIR)/dsp/%_M4.o: $(BUILD_DIR)/dsp/%.c
 	@-echo CC faust-generated: $@
 	$(Q) $(CC) -c $(CFLAGS) $(CFLAGS_M4) $(CFLAGS_DSP) $(INCLUDES) $(INCLUDES_M4) -include faust_dsp/faustdsp.h $< -o $@
+	$(Q) $(OD) $@ --dwarf=info > $(BUILD_DIR)/dsp/$(basename $(notdir $@)).dwarf
 	$(Q) $(OC) $@ $@ --prefix-sections=.$(*F) $(OC_RENAMES_DSP)
 
 $(BUILD_DIR)/%.o: src/%.c
@@ -222,11 +225,10 @@ $(BUILD_DIR)/RAM_$(PROJECT).axf: $(OBJECTS) $(DSP_OBJECTS_M4) $(BUILD_DIR)/RAM_$
 
 $(BUILD_DIR)/dsp/%.fx: $(BUILD_DIR)/$(PROJECT).axf
 	@-echo 'creating fx container for $@'
-	$(Q) $(OC) $(BUILD_DIR)/$(PROJECT)_M0.axf  out/dsp/M0gui.dump --only-section=.$(basename $(notdir $@))_dsp_M0gui     -O binary --gap-fill 0xff
-	$(Q) $(OC) $(BUILD_DIR)/$(PROJECT)_M0.axf  out/dsp/M0init.dump --only-section=.$(basename $(notdir $@))_dsp_M0init   -O binary --gap-fill 0xff
-	$(Q) $(OC) $(BUILD_DIR)/$(PROJECT).axf     out/dsp/M4dsp.dump --only-section=.$(basename $(notdir $@))_dsp_M4dsp     -O binary --gap-fill 0xff
-	$(Q) $(OC) $(BUILD_DIR)/$(PROJECT).axf     out/dsp/M4alloc.dump --only-section=.$(basename $(notdir $@))_dsp_M4alloc -O binary
-	$(Q) python scripts/create_fx_container.py -o $@ --name $(notdir $(basename $@)) --M0gui out/dsp/M0gui.dump --M0init out/dsp/M0init.dump --M4dsp out/dsp/M4dsp.dump --M4alloc out/dsp/M4alloc.dump
+	$(Q) $(OC) $(BUILD_DIR)/$(PROJECT)_M0.axf  $(BUILD_DIR)/dsp/M0gui.dump --only-section=.$(basename $(notdir $@))_dsp_M0gui     -O binary --gap-fill 0xff
+	$(Q) $(OC) $(BUILD_DIR)/$(PROJECT)_M0.axf  $(BUILD_DIR)/dsp/M0init.dump --only-section=.$(basename $(notdir $@))_dsp_M0init   -O binary --gap-fill 0xff
+	$(Q) $(OC) $(BUILD_DIR)/$(PROJECT).axf     $(BUILD_DIR)/dsp/M4dsp.dump --only-section=.$(basename $(notdir $@))_dsp_M4dsp     -O binary --gap-fill 0xff
+	$(Q) python scripts/create_fx_container.py -o $@ --name $(notdir $(basename $@)) --M0gui $(BUILD_DIR)/dsp/M0gui.dump --M0init $(BUILD_DIR)/dsp/M0init.dump --M4dsp $(BUILD_DIR)/dsp/M4dsp.dump --M4alloc $(BUILD_DIR)/dsp/$(basename $(notdir $@))_M4.dwarf
 
 effects: $(DSP_FX_FILES)
 
