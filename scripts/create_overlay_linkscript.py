@@ -27,12 +27,12 @@ for name in names:
 	if platform == 'M0':
 		overlay += '''
     .%s_dsp_M0init { KEEP(*(.%s.text.instanceInitmydsp)) }
-    .%s_dsp_M0gui  { KEEP(*(.%s.text.buildUserInterfacemydsp)) }''' % (name, name, name, name)
+    .%s_dsp_M0gui  { KEEP(*(.%s.text.buildUserInterfacemydsp));  KEEP(*(.%s.rodata)) }''' % (name, name, name, name, name)
 
 	else:
 		overlay += '''
-    .%s_dsp_M4dsp   { KEEP(*(.%s.text.computemydsp)) }
-    .%s_dsp_M4alloc { KEEP(*(.%s.text.newmydsp)) }''' % (name, name, name, name)
+    .%s_dsp_M4dsp   { KEEP(*(.%s.text.computemydsp)); KEEP(*(.%s.rodata)) }
+    .%s_dsp_M4alloc { KEEP(*(.%s.text.newmydsp)) }''' % (name, name, name, name, name)
 
 overlay += '''
   } > ShadowMap
