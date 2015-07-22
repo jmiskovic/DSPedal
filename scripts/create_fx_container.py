@@ -9,11 +9,12 @@ parser = argparse.ArgumentParser(description='Construct fx effect container from
 
 # --name looper --M0gui out/M0gui.dump --M0init out/M0init.dump --M4dsp out/M4dsp.dump
 
-parser.add_argument('--name',   required=True, help='name of effect')
-parser.add_argument('--M0gui',  required=True, help='path of M0 gui init code dump')
-parser.add_argument('--M0init', required=True, help='path of M0 dsp init code dump')
-parser.add_argument('--M4dsp',  required=True, help='path of M4 dsp code dump')
-parser.add_argument('--M4alloc',required=True, help='path of M4 data allocation code dump')
+parser.add_argument('-o', '--out', 	required=True, help='output filename')
+parser.add_argument('--name',   	required=True, help='name of effect')
+parser.add_argument('--M0gui',  	required=True, help='path of M0 gui init code dump')
+parser.add_argument('--M0init', 	required=True, help='path of M0 dsp init code dump')
+parser.add_argument('--M4dsp',  	required=True, help='path of M4 dsp code dump')
+parser.add_argument('--M4alloc',	required=True, help='path of M4 data allocation code dump')
 
 args = parser.parse_args()
 name = args.name[:14].title()
@@ -48,7 +49,7 @@ header = struct.pack('<B15sHHHI',
 
 total_size = 0
 
-with open(os.path.join('out', args.name + '.fx'), 'wb') as fx:
+with open(args.out, 'wb') as fx:
 	fx.write(header)
 	fx.write(DELIMIT)
 	fx.write(M0gui)

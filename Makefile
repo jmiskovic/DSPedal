@@ -59,12 +59,13 @@ INCLUDES_M0 = -I lpcopen/lpc_chip_43xx_M0/inc
 INCLUDES_M0+= -I lpcopen/lpc_chip_43xx_M0/inc/usbd
 
 OC_RENAMES_M0BUILD = --redefine-sym __vectors_start__=__vectors_start_m0 --keep-symbol __vectors_start_m0 --keep-symbol __bss_section_table_M0 --keep-symbol __bss_section_table_end_M0
-OC_RENAMES_DSP     = --redefine-sym newmydsp=$(*F)_newmydsp --redefine-sym deletemydsp=$(*F)_deletemydsp --redefine-sym metadatamydsp=$(*F)_metadatamydsp --redefine-sym getSampleRatemydsp=$(*F)_getSampleRatemydsp --redefine-sym getNumInputsmydsp=$(*F)_getNumInputsmydsp --redefine-sym getNumOutputsmydsp=$(*F)_getNumOutputsmydsp --redefine-sym getInputRatemydsp=$(*F)_getInputRatemydsp --redefine-sym getOutputRatemydsp=$(*F)_getOutputRatemydsp --redefine-sym classInitmydsp=$(*F)_classInitmydsp --redefine-sym instanceInitmydsp=$(*F)_instanceInitmydsp --redefine-sym initmydsp=$(*F)_initmydsp --redefine-sym buildUserInterfacemydsp=$(*F)_buildUserInterfacemydsp --redefine-sym computemydsp=$(*F)_computemydsp 
+OC_RENAMES_DSP     = --redefine-sym newmydsp=$(*F)_newmydsp --redefine-sym deletemydsp=$(*F)_deletemydsp --redefine-sym metadatamydsp=$(*F)_metadatamydsp --redefine-sym getSampleRatemydsp=$(*F)_getSampleRatemydsp --redefine-sym getNumInputsmydsp=$(*F)_getNumInputsmydsp --redefine-sym getNumOutputsmydsp=$(*F)_getNumOutputsmydsp --redefine-sym getInputRatemydsp=$(*F)_getInputRatemydsp --redefine-sym getOutputRatemydsp=$(*F)_getOutputRatemydsp --redefine-sym classInitmydsp=$(*F)_classInitmydsp --redefine-sym instanceInitmydsp=$(*F)_instanceInitmydsp --redefine-sym initmydsp=$(*F)_initmydsp --redefine-sym buildUserInterfacemydsp=$(*F)_buildUserInterfacemydsp --redefine-sym computemydsp=$(*F)_computemydsp --redefine-sym newmydsp=$(*F)_newmydsp
 
 DSP_SOURCES       = $(wildcard faust_dsp/*.dsp)
 DSP_BASE_NAMES    = $(basename $(notdir $(DSP_SOURCES)))
 DSP_OBJECTS_M4    = $(addsuffix _M4.o,$(addprefix $(BUILD_DIR)/dsp/,$(DSP_BASE_NAMES)))
 DSP_OBJECTS_M0    = $(addsuffix _M0.o,$(addprefix $(BUILD_DIR)/dsp/,$(DSP_BASE_NAMES)))
+DSP_FX_FILES	  = $(addsuffix .fx  ,$(addprefix $(BUILD_DIR)/dsp/,$(DSP_BASE_NAMES)))
 #DSP_CONTAINERS = $(patsubst %.dsp,%.fx,$(EFFECTS))
 
 OBJECTS = 	$(BUILD_DIR)/startup.o \
@@ -177,7 +178,7 @@ $(BUILD_DIR)/%.o: lpcopen/lpc_chip_43xx_M4/src/%.c
 $(BUILD_DIR)/$(PROJECT)_M0.axf: $(OBJECTS_M0) $(DSP_OBJECTS_M0)
 	@-echo 'LD OBJECTS, LIBS -> $@ @M0'
 	$(Q) python scripts/create_overlay_linkscript.py $(LINKERSCRIPT_OVERLAY) M0 $(DSP_BASE_NAMES)
-	$(Q) $(LD) $(CFLAGS) $(CFLAGS_M0) -Wl,--gc-sections -T $(LINKERSCRIPT_FLASH) -T $(LINKERSCRIPT_M0) -T$(LINKERSCRIPT_OVERLAY) $(OBJECTS_M0) $(DSP_OBJECTS_M0) -Wl,-Map=$(BUILD_DIR)/$(PROJECT)_M0.map -o $@
+	$(Q) $(LD) $(CFLAGS) $(CFLAGS_M0) -Wl,--gc-sections -T $(LINKERSCRIPT_FLASH) -T $(LINKERSCRIPT_M0) -T $(LINKERSCRIPT_OVERLAY) $(OBJECTS_M0) $(DSP_OBJECTS_M0) -Wl,-Map=$(BUILD_DIR)/$(PROJECT)_M0.map -o $@
 
 $(BUILD_DIR)/$(PROJECT)_M0.o: $(BUILD_DIR)/$(PROJECT)_M0.axf
 	@-echo 'OC $< -> $@ @M0'
@@ -186,7 +187,7 @@ $(BUILD_DIR)/$(PROJECT)_M0.o: $(BUILD_DIR)/$(PROJECT)_M0.axf
 $(BUILD_DIR)/$(PROJECT).axf: $(OBJECTS) $(DSP_OBJECTS_M4) $(BUILD_DIR)/$(PROJECT)_M0.o 
 	@-echo 'LD OBJECTS, LIBS, M0 image -> $@'
 	$(Q) python scripts/create_overlay_linkscript.py $(LINKERSCRIPT_OVERLAY) M4 $(DSP_BASE_NAMES)
-	$(Q) $(LD) $(CFLAGS) $(CFLAGS_M4) -Wl,--gc-sections -T $(LINKERSCRIPT_FLASH) -T $(LINKERSCRIPT_M4) -Wl,-Map=$(BUILD_DIR)/$(PROJECT).map $(OBJECTS) $(DSP_OBJECTS_M4) $(BUILD_DIR)/$(PROJECT)_M0.o $(CLIBS) -o $@
+	$(Q) $(LD) $(CFLAGS) $(CFLAGS_M4) -Wl,--gc-sections -T $(LINKERSCRIPT_FLASH) -T $(LINKERSCRIPT_M4) -T $(LINKERSCRIPT_OVERLAY) -Wl,-Map=$(BUILD_DIR)/$(PROJECT).map $(OBJECTS) $(DSP_OBJECTS_M4) $(BUILD_DIR)/$(PROJECT)_M0.o $(CLIBS) -o $@
 	$(Q) $(SIZE) $@
 
 $(BUILD_DIR)/$(PROJECT).bin: $(BUILD_DIR)/$(PROJECT).axf
@@ -205,7 +206,7 @@ $(BUILD_DIR)/$(PROJECT).bin.hdr: $(BUILD_DIR)/$(PROJECT).bin
 $(BUILD_DIR)/RAM_$(PROJECT)_M0.axf: $(OBJECTS_M0) $(DSP_OBJECTS_M0)
 	@-echo 'LD OBJECTS, LIBS -> $@ @M0'
 	$(Q) python scripts/create_overlay_linkscript.py $(LINKERSCRIPT_OVERLAY) M0 $(DSP_BASE_NAMES)
-	$(Q) $(LD) $(CFLAGS) $(CFLAGS_M0) -Wl,--gc-sections -T $(LINKERSCRIPT_RAM) -T $(LINKERSCRIPT_M0) -T$(LINKERSCRIPT_OVERLAY) $(OBJECTS_M0) $(DSP_OBJECTS_M0) -Wl,-Map=$(BUILD_DIR)/$(PROJECT)_M0.map -o $@
+	$(Q) $(LD) $(CFLAGS) $(CFLAGS_M0) -Wl,--gc-sections -T $(LINKERSCRIPT_RAM) -T $(LINKERSCRIPT_M0) -T $(LINKERSCRIPT_OVERLAY) $(OBJECTS_M0) $(DSP_OBJECTS_M0) -Wl,-Map=$(BUILD_DIR)/$(PROJECT)_M0.map -o $@
 
 $(BUILD_DIR)/RAM_$(PROJECT)_M0.o: $(BUILD_DIR)/RAM_$(PROJECT)_M0.axf
 	@-echo 'OC $< -> $@ @M0'
@@ -214,8 +215,20 @@ $(BUILD_DIR)/RAM_$(PROJECT)_M0.o: $(BUILD_DIR)/RAM_$(PROJECT)_M0.axf
 $(BUILD_DIR)/RAM_$(PROJECT).axf: $(OBJECTS) $(DSP_OBJECTS_M4) $(BUILD_DIR)/RAM_$(PROJECT)_M0.o
 	@-echo 'LD OBJECTS, LIBS, M0 image -> $@'
 	$(Q) python scripts/create_overlay_linkscript.py $(LINKERSCRIPT_OVERLAY) M4 $(DSP_BASE_NAMES)
-	$(Q) $(LD) $(CFLAGS) $(CFLAGS_M4) -Wl,--gc-sections -T $(LINKERSCRIPT_RAM) -T $(LINKERSCRIPT_M4) -T$(LINKERSCRIPT_OVERLAY) -Wl,-Map=$(BUILD_DIR)/$(PROJECT).map $(OBJECTS) $(DSP_OBJECTS_M4) $(BUILD_DIR)/RAM_$(PROJECT)_M0.o $(CLIBS) -o $@
+	$(Q) $(LD) $(CFLAGS) $(CFLAGS_M4) -Wl,--gc-sections -T $(LINKERSCRIPT_RAM) -T $(LINKERSCRIPT_M4) -T $(LINKERSCRIPT_OVERLAY) -Wl,-Map=$(BUILD_DIR)/$(PROJECT).map $(OBJECTS) $(DSP_OBJECTS_M4) $(BUILD_DIR)/RAM_$(PROJECT)_M0.o $(CLIBS) -o $@
 	$(Q) $(SIZE) $@
+
+# Extracting DSP code from build image (axf)
+
+$(BUILD_DIR)/dsp/%.fx: $(BUILD_DIR)/$(PROJECT).axf
+	@-echo 'creating fx container for $@'
+	$(Q) $(OC) $(BUILD_DIR)/$(PROJECT)_M0.axf  out/dsp/M0gui.dump --only-section=.$(basename $(notdir $@))_dsp_M0gui     -O binary --gap-fill 0xff
+	$(Q) $(OC) $(BUILD_DIR)/$(PROJECT)_M0.axf  out/dsp/M0init.dump --only-section=.$(basename $(notdir $@))_dsp_M0init   -O binary --gap-fill 0xff
+	$(Q) $(OC) $(BUILD_DIR)/$(PROJECT).axf     out/dsp/M4dsp.dump --only-section=.$(basename $(notdir $@))_dsp_M4dsp     -O binary --gap-fill 0xff
+	$(Q) $(OC) $(BUILD_DIR)/$(PROJECT).axf     out/dsp/M4alloc.dump --only-section=.$(basename $(notdir $@))_dsp_M4alloc -O binary
+	$(Q) python scripts/create_fx_container.py -o $@ --name $(notdir $(basename $@)) --M0gui out/dsp/M0gui.dump --M0init out/dsp/M0init.dump --M4dsp out/dsp/M4dsp.dump --M4alloc out/dsp/M4alloc.dump
+
+effects: $(DSP_FX_FILES)
 
 # Executing and cleaning
 
