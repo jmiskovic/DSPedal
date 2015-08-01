@@ -26,13 +26,13 @@ SECTIONS {
 for name in names:
 	if platform == 'M0':
 		overlay += '''
-    .%s_dsp_M0init { KEEP(*(.%s.text.instanceInitmydsp)) }
-    .%s_dsp_M0gui  { KEEP(*(.%s.text.buildUserInterfacemydsp));  KEEP(*(.%s.rodata)) }''' % (name, name, name, name, name)
+    .dsp_%sM0init { KEEP(*(.%s.text.instanceInitmydsp)) }
+    .dsp_%sM0gui  { KEEP(*(.%s.text.buildUserInterfacemydsp));  KEEP(*(.%s.rodata)) }''' % (name, name, name, name, name)
 
 	else:
 		overlay += '''
-    .%s_dsp_M4dsp   { KEEP(*(.%s.text.computemydsp)); KEEP(*(.%s.rodata)) }
-    .%s_dsp_M4alloc { KEEP(*(.%s.text.newmydsp)) }''' % (name, name, name, name, name)
+    .dsp_%sM4dsp   { KEEP(*(.%s.text.computemydsp)); KEEP(*(.%s.rodata)) }
+    .dsp_%sM4alloc { KEEP(*(.%s.text.newmydsp)) }''' % (name, name, name, name, name)
 
 overlay += '''
   } > ShadowMap

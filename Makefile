@@ -12,6 +12,7 @@ AS = arm-none-eabi-gcc
 LD = arm-none-eabi-gcc
 OC = arm-none-eabi-objcopy
 OD = arm-none-eabi-objdump
+STRIP = arm-none-eabi-strip
 GDB = arm-none-eabi-gdb
 SIZE = arm-none-eabi-size
 FAUST = $(FAUSTPATH)/compiler/faust
@@ -161,8 +162,8 @@ $(BUILD_DIR)/%_M0.o: lpcopen/lpc_chip_43xx_M0/src/%.c
 $(BUILD_DIR)/dsp/%_M4.o: $(BUILD_DIR)/dsp/%.c
 	@-echo CC faust-generated: $@
 	$(Q) $(CC) -c $(CFLAGS) $(CFLAGS_M4) $(CFLAGS_DSP) $(INCLUDES) $(INCLUDES_M4) -include faust_dsp/faustdsp.h $< -o $@
-	$(Q) $(OD) $@ --dwarf=info > $(BUILD_DIR)/dsp/$(basename $(notdir $@)).dwarf
-	$(Q) $(OC) $@ $@ --prefix-sections=.$(*F) $(OC_RENAMES_DSP)
+	$(Q) $(OD) $@ --dwarf=info > $(BUILD_DIR)/dsp/$*_M4.dwarf
+		$(Q) $(OC) $@ $@ --prefix-sections=.$(*F) $(OC_RENAMES_DSP)
 
 $(BUILD_DIR)/%.o: src/%.c
 	@-echo CC src: $@
@@ -182,6 +183,7 @@ $(BUILD_DIR)/$(PROJECT)_M0.axf: $(OBJECTS_M0) $(DSP_OBJECTS_M0)
 	@-echo 'LD OBJECTS, LIBS -> $@ @M0'
 	$(Q) python scripts/create_overlay_linkscript.py $(LINKERSCRIPT_OVERLAY) M0 $(DSP_BASE_NAMES)
 	$(Q) $(LD) $(CFLAGS) $(CFLAGS_M0) -Wl,--gc-sections -T $(LINKERSCRIPT_FLASH) -T $(LINKERSCRIPT_M0) -T $(LINKERSCRIPT_OVERLAY) $(OBJECTS_M0) $(DSP_OBJECTS_M0) -Wl,-Map=$(BUILD_DIR)/$(PROJECT)_M0.map -o $@
+	python scripts/mark_dsp_unloadable.py $@ $(DSP_BASE_NAMES)
 
 $(BUILD_DIR)/$(PROJECT)_M0.o: $(BUILD_DIR)/$(PROJECT)_M0.axf
 	@-echo 'OC $< -> $@ @M0'
@@ -191,6 +193,7 @@ $(BUILD_DIR)/$(PROJECT).axf: $(OBJECTS) $(DSP_OBJECTS_M4) $(BUILD_DIR)/$(PROJECT
 	@-echo 'LD OBJECTS, LIBS, M0 image -> $@'
 	$(Q) python scripts/create_overlay_linkscript.py $(LINKERSCRIPT_OVERLAY) M4 $(DSP_BASE_NAMES)
 	$(Q) $(LD) $(CFLAGS) $(CFLAGS_M4) -Wl,--gc-sections -T $(LINKERSCRIPT_FLASH) -T $(LINKERSCRIPT_M4) -T $(LINKERSCRIPT_OVERLAY) -Wl,-Map=$(BUILD_DIR)/$(PROJECT).map $(OBJECTS) $(DSP_OBJECTS_M4) $(BUILD_DIR)/$(PROJECT)_M0.o $(CLIBS) -o $@
+	python scripts/mark_dsp_unloadable.py $@ $(DSP_BASE_NAMES)
 	$(Q) $(SIZE) $@
 
 $(BUILD_DIR)/$(PROJECT).bin: $(BUILD_DIR)/$(PROJECT).axf
@@ -210,6 +213,7 @@ $(BUILD_DIR)/RAM_$(PROJECT)_M0.axf: $(OBJECTS_M0) $(DSP_OBJECTS_M0)
 	@-echo 'LD OBJECTS, LIBS -> $@ @M0'
 	$(Q) python scripts/create_overlay_linkscript.py $(LINKERSCRIPT_OVERLAY) M0 $(DSP_BASE_NAMES)
 	$(Q) $(LD) $(CFLAGS) $(CFLAGS_M0) -Wl,--gc-sections -T $(LINKERSCRIPT_RAM) -T $(LINKERSCRIPT_M0) -T $(LINKERSCRIPT_OVERLAY) $(OBJECTS_M0) $(DSP_OBJECTS_M0) -Wl,-Map=$(BUILD_DIR)/$(PROJECT)_M0.map -o $@
+	python scripts/mark_dsp_unloadable.py $@ $(DSP_BASE_NAMES)
 
 $(BUILD_DIR)/RAM_$(PROJECT)_M0.o: $(BUILD_DIR)/RAM_$(PROJECT)_M0.axf
 	@-echo 'OC $< -> $@ @M0'
@@ -219,16 +223,17 @@ $(BUILD_DIR)/RAM_$(PROJECT).axf: $(OBJECTS) $(DSP_OBJECTS_M4) $(BUILD_DIR)/RAM_$
 	@-echo 'LD OBJECTS, LIBS, M0 image -> $@'
 	$(Q) python scripts/create_overlay_linkscript.py $(LINKERSCRIPT_OVERLAY) M4 $(DSP_BASE_NAMES)
 	$(Q) $(LD) $(CFLAGS) $(CFLAGS_M4) -Wl,--gc-sections -T $(LINKERSCRIPT_RAM) -T $(LINKERSCRIPT_M4) -T $(LINKERSCRIPT_OVERLAY) -Wl,-Map=$(BUILD_DIR)/$(PROJECT).map $(OBJECTS) $(DSP_OBJECTS_M4) $(BUILD_DIR)/RAM_$(PROJECT)_M0.o $(CLIBS) -o $@
+	python scripts/mark_dsp_unloadable.py $@ $(DSP_BASE_NAMES)
 	$(Q) $(SIZE) $@
 
 # Extracting DSP code from build image (axf)
 
 $(BUILD_DIR)/dsp/%.fx: $(BUILD_DIR)/$(PROJECT).axf
 	@-echo 'creating fx container for $@'
-	$(Q) $(OC) $(BUILD_DIR)/$(PROJECT)_M0.axf  $(BUILD_DIR)/dsp/M0gui.dump --only-section=.$(basename $(notdir $@))_dsp_M0gui     -O binary --gap-fill 0xff
-	$(Q) $(OC) $(BUILD_DIR)/$(PROJECT)_M0.axf  $(BUILD_DIR)/dsp/M0init.dump --only-section=.$(basename $(notdir $@))_dsp_M0init   -O binary --gap-fill 0xff
-	$(Q) $(OC) $(BUILD_DIR)/$(PROJECT).axf     $(BUILD_DIR)/dsp/M4dsp.dump --only-section=.$(basename $(notdir $@))_dsp_M4dsp     -O binary --gap-fill 0xff
-	$(Q) python scripts/create_fx_container.py -o $@ --name $(notdir $(basename $@)) --M0gui $(BUILD_DIR)/dsp/M0gui.dump --M0init $(BUILD_DIR)/dsp/M0init.dump --M4dsp $(BUILD_DIR)/dsp/M4dsp.dump --M4alloc $(BUILD_DIR)/dsp/$(basename $(notdir $@))_M4.dwarf
+	$(Q) $(OC) $(BUILD_DIR)/$(PROJECT)_M0.axf  $(BUILD_DIR)/dsp/$*_M0gui.dump --only-section=.dsp_$*M0gui     -O binary --gap-fill 0xff
+	$(Q) $(OC) $(BUILD_DIR)/$(PROJECT)_M0.axf  $(BUILD_DIR)/dsp/$*_M0init.dump --only-section=.dsp_$*M0init   -O binary --gap-fill 0xff
+	$(Q) $(OC) $(BUILD_DIR)/$(PROJECT).axf     $(BUILD_DIR)/dsp/$*_M4dsp.dump --only-section=.dsp_$*M4dsp     -O binary --gap-fill 0xff
+	$(Q) python scripts/create_fx_container.py -o $@ --name $* --M0gui $(BUILD_DIR)/dsp/$*_M0gui.dump --M0init $(BUILD_DIR)/dsp/$*_M0init.dump --M4dsp $(BUILD_DIR)/dsp/$*_M4dsp.dump --M4alloc $(BUILD_DIR)/dsp/$*_M4.dwarf
 
 effects: $(DSP_FX_FILES)
 
@@ -247,5 +252,6 @@ gdb_M0: $(BUILD_DIR)/RAM_$(PROJECT)_M0.axf
 clean:
 	@-echo cleaning
 	$(Q) find $(BUILD_DIR) -type f -exec rm {} \;
+	$(Q) find $(BUILD_DIR)/dsp -type f -exec rm {} \;
 	$(Q) rm -f ./faust_dsp/looper-svg/*
 	$(Q) rm -f ./src/bitmaps_M0.c ./src/bitmaps.h

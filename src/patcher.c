@@ -5,7 +5,7 @@
 #include "sound.h"
 #include "board.h"
 
-#define MAX_EFFECT_COUNT (32) // how many effects can be managed by patcher
+#define MAX_EFFECT_COUNT (1) // how many effects can be managed by patcher
 static const uint32_t SPIFLASH_EFFECT_SIZE = 0x10000; // 64kB, same as erase block size
 static const uint32_t DELIMITER_SIZE = 3;
 
@@ -93,7 +93,7 @@ bool test_spifi() {
 
 void patcher_init()
 {
-    pSpifi = spifi_init();
+    //pSpifi = spifi_init();
     //test_spifi();
     //flash_program(0, 0x10088000, 0x100);
     //memset(0x10088000, 0xff, 0xff);
@@ -221,7 +221,7 @@ static void construct_available_list() { // scan FLASH for available effects, ad
     }
 }
 
-static volatile bool execute_in_place = false;
+static volatile bool execute_in_place = true;
 static volatile __attribute__((used)) struct Effect effect; // dbg
 static volatile __attribute__((used)) struct EffectInfo header; // dbg
 
@@ -232,9 +232,9 @@ static void load_code(struct Effect * e) {
     uint32_t M0initcode_address = M0guicode_address + e->info.size_M0guicode + DELIMITER_SIZE;
     uint32_t M4dspcode_address = M0initcode_address + e->info.size_M0initcode + DELIMITER_SIZE;
 
-    e->initmydsp               = last_addressM0; // executed in this function, not kept in RAM
-    e->buildUserInterfacemydsp = last_addressM0;
-    e->computemydsp            = last_addressM4;
+    e->initmydsp               = last_addressM0 + 1; // executed in this function, not kept in RAM
+    e->buildUserInterfacemydsp = last_addressM0 + 1;
+    e->computemydsp            = last_addressM4 + 1;
     e->data                    = last_addressData;
 
     // TODO: check for space in all memories
@@ -242,12 +242,15 @@ static void load_code(struct Effect * e) {
         (uint32_t *) e->initmydsp, e->info.size_M0initcode);
     if (errCode != SPIFI_ERR_NONE) fatalError("failed loading M0 init code", errCode);
     
-    if (execute_in_place)
+    if (execute_in_place) {
+        LPC_CREG->MXMEMMAP = (unsigned int) e->initmydsp; // shadow-mapping memory to where the code is loaded in SRAM
         e->initmydsp(e->data, SAMPLE_RATE); // initialize dsp data before overwriting this code block
+    }
     
     errCode = flash_read((uint32_t *) M0guicode_address,
         (uint32_t *) e->buildUserInterfacemydsp, e->info.size_M0guicode);
     if (errCode != SPIFI_ERR_NONE) fatalError("failed loading M0 gui code", errCode);
+
     errCode = flash_read((uint32_t *) M4dspcode_address,
         (uint32_t *) e->computemydsp, e->info.size_M4dspcode);
     if (errCode != SPIFI_ERR_NONE) fatalError("failed loading M4 dsp code", errCode);
@@ -315,7 +318,7 @@ static SPIFI_HANDLE_T *spifi_init() {
     return pSpifi;
 }
 
-static volatile bool use_flash = true;
+static volatile bool use_flash = false;
 static const uint32_t RAM_BASE_ADDRESS = 0x10088000;
 #include <string.h>
 
