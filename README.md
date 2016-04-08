@@ -16,6 +16,14 @@ Aside from controller the base board has 256 MB SDRAM, and accelerometer and an 
 
 Processing effect is written in [Faust](http://faust.grame.fr/) programming language and compiled into C code. So far the Cortex M4 core clocked at 204 MHz has proven to be capable of executing relatively complex effects like wah, but effect-chaining quickly reaches the limits of processing power.
 
+## Controlling effect parameters ##
+
+While the DSP is programmed in Faust, user can specify input parameters, defined by name, range, step and initial value. These parameters are automatically added to GUI and can be controlled freely.
+
+One way to change parameter is to use arrow keys. Left/right selects the effect while up/down changes value by step. The selected parameter is displayed as large horizontal gauge in the middle of GLCD. The rest of channels are displayed as small vertical bars on sides.
+
+The other way is to bind parameter to input channel. By pressing enter key, input channels are cycled; icon shows currently selected channels. Supported channels are: Pot1, Pot2, Pot3, Pedal1, Pedal2, Accelerometer X axis and Accelerometer Y axis. Once the channel is selected, the parameter value is constantly updated with input channel value.
+
 ## Firmware ##
 
 LPCOpen is used as HAL. The port to this platform is extracted as a separate project [here](https://bitbucket.org/jmiskovic/lpcopen-for-lpc4357-evb). The toolchain and workflow is described there.
